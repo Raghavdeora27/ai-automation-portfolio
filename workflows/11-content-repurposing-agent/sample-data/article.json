@@ -1,0 +1,5 @@
+{
+  "url": "https://example.com/blog/invoice-automation",
+  "title": "How a captured payment becomes one invoice",
+  "text": "When a customer pays, the billing system can send the same webhook more than once. A careful setup checks the signature, stores the payment id, and creates one invoice. If the receipt email fails, the invoice is left as it is and only the email is retried. Tax rates come from the company's own settings, confirmed by their accountant. This article describes that sequence for an internal team. It does not report customer counts or revenue."
+}

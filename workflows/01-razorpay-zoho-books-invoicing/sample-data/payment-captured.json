@@ -1,0 +1,50 @@
+{
+  "entity": "event",
+  "account_id": "acc_MockAccount0001",
+  "event": "payment.captured",
+  "contains": ["payment"],
+  "payload": {
+    "payment": {
+      "entity": {
+        "id": "pay_MockCaptured0001",
+        "entity": "payment",
+        "amount": 118000,
+        "currency": "INR",
+        "status": "captured",
+        "order_id": "order_Mock0001",
+        "invoice_id": null,
+        "international": false,
+        "method": "upi",
+        "amount_refunded": 0,
+        "refund_status": null,
+        "captured": true,
+        "description": "Annual support plan",
+        "card_id": null,
+        "bank": null,
+        "wallet": null,
+        "vpa": "buyer@okexample",
+        "email": "buyer@example.com",
+        "contact": "+919800000000",
+        "notes": {
+          "customer_name": "Example Buyer",
+          "gstin": "09AAAAA0000A1Z5",
+          "place_of_supply": "UP",
+          "item_description": "Annual support plan",
+          "sac_hsn": "CONFIGURE_ME"
+        },
+        "fee": 2360,
+        "tax": 360,
+        "error_code": null,
+        "error_description": null,
+        "error_source": null,
+        "error_step": null,
+        "error_reason": null,
+        "acquirer_data": {
+          "rrn": "MOCKRRN0001"
+        },
+        "created_at": 1760529600
+      }
+    }
+  },
+  "created_at": 1760529602
+}

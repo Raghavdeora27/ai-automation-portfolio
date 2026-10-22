@@ -1,0 +1,12 @@
+{
+  "kind": "error",
+  "workflow": "01-razorpay-zoho-books-invoicing",
+  "execution_id": "exec_mock_0001",
+  "node": "Zoho Books create invoice",
+  "correlation_id": "pay_MockCaptured0001",
+  "step": "invoice",
+  "outcome": "failed",
+  "error_code": "zoho_books_429",
+  "message": "Zoho Books returned 429 after 5 attempts.",
+  "occurred_at": "2026-10-15T10:00:00Z"
+}

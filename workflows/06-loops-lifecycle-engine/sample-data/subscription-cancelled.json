@@ -1,0 +1,14 @@
+{
+  "event_id": "evt_mock_cancelled_0001",
+  "event": "subscription.cancelled",
+  "occurred_at": "2026-10-20T08:00:00Z",
+  "email": "buyer@example.com",
+  "subscription_id": "sub_Mock0001",
+  "customer_id": "cust_Mock0001",
+  "plan_id": "plan_MockAnnual",
+  "plan_status": "cancelled",
+  "paid_count": 2,
+  "failed_payment_count": 1,
+  "cancel_at_period_end": false,
+  "currency": "INR"
+}
