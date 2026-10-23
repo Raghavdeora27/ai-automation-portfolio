@@ -1,0 +1,12 @@
+{
+  "message_id": "<mock-lead-001@mail.example.com>",
+  "from": {
+    "name": "Aman Verma",
+    "email": "aman.verma@example.com"
+  },
+  "to": ["sales@client.example"],
+  "subject": "Quote for invoice automation",
+  "text": "Hello,\n\nWe are Example Traders in Pune. We want to automate GST invoices from Razorpay into Zoho Books. We can start this month, and the budget is about 80000 INR. Can we book a call this week?\n\nAman Verma\naman.verma@example.com\n+919800000002\n",
+  "received_at": "2026-10-15T09:30:00Z",
+  "attachments": []
+}

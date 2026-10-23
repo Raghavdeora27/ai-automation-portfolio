@@ -1,0 +1,23 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Credentials and key material
+credentials.json
+credentials/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*service-account*.json
+
+# Local n8n data
+.n8n/
+n8n-data/
+n8nEventLog.log
+
+# OS noise
+.DS_Store
+Thumbs.db

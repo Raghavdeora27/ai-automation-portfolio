@@ -1,0 +1,15 @@
+{
+  "event_id": "evt_mock_charged_0001",
+  "event": "subscription.charged",
+  "occurred_at": "2026-10-15T08:00:00Z",
+  "email": "buyer@example.com",
+  "subscription_id": "sub_Mock0001",
+  "customer_id": "cust_Mock0001",
+  "plan_id": "plan_MockAnnual",
+  "plan_status": "active",
+  "paid_count": 2,
+  "failed_payment_count": 0,
+  "cancel_at_period_end": false,
+  "amount": 118000,
+  "currency": "INR"
+}

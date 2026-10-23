@@ -1,0 +1,22 @@
+{
+  "window_start": "2026-10-14T03:30:00Z",
+  "window_end": "2026-10-15T03:30:00Z",
+  "timezone": "Asia/Kolkata",
+  "fixture": true,
+  "workflows": [
+    {
+      "workflow": "01-razorpay-zoho-books-invoicing",
+      "ok": 3,
+      "failed": 1,
+      "retry": 2,
+      "waiting_for_approval": 0
+    },
+    {
+      "workflow": "07-accounts-payable-automation",
+      "ok": 1,
+      "failed": 0,
+      "retry": 0,
+      "waiting_for_approval": 1
+    }
+  ]
+}
