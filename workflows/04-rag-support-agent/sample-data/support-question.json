@@ -1,7 +1,0 @@
-{
-  "question_id": "q_mock_0001",
-  "channel": "web_widget",
-  "user_ref": "user_mock_0001",
-  "asked_at": "2026-10-15T10:15:00Z",
-  "text": "How do I download the GST invoice for a Razorpay payment that already succeeded?"
-}

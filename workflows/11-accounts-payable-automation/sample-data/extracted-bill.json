@@ -1,0 +1,24 @@
+{
+  "vendor_name": "Northwind Supplies",
+  "vendor_tax_id": "",
+  "invoice_number": "INV-2041",
+  "invoice_date": "2026-10-01",
+  "currency": "USD",
+  "subtotal": 100.0,
+  "tax_total": 8.0,
+  "grand_total": 108.0,
+  "line_items": [
+    {
+      "description": "Office supplies, October",
+      "quantity": 1,
+      "rate": 100.0,
+      "tax_amount": 8.0
+    }
+  ],
+  "field_confidence": {
+    "vendor_name": 0.96,
+    "invoice_number": 0.98,
+    "invoice_date": 0.94,
+    "grand_total": 0.97
+  }
+}

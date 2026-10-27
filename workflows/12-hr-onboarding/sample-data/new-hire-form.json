@@ -1,0 +1,12 @@
+{
+  "submission_id": "sheet_row_mock_0001",
+  "submitted_at": "2026-10-15T06:00:00Z",
+  "employee_name": "Example Hire",
+  "employee_email": "hire@example.com",
+  "role": "Support associate",
+  "department": "Customer support",
+  "start_date": "2026-11-02",
+  "manager_name": "Example Manager",
+  "manager_email": "manager@example.com",
+  "work_location": "Remote"
+}

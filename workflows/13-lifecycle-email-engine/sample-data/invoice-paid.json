@@ -1,0 +1,21 @@
+{
+  "id": "evt_mock_paid_0002",
+  "object": "event",
+  "api_version": "2024-06-20",
+  "created": 1760529602,
+  "type": "invoice.paid",
+  "data": {
+    "object": {
+      "id": "in_mock_0002",
+      "object": "invoice",
+      "customer": "cus_mock_0001",
+      "customer_email": "buyer@example.com",
+      "customer_name": "Example Buyer",
+      "amount_paid": 10000,
+      "currency": "usd",
+      "status": "paid",
+      "billing_reason": "subscription_cycle",
+      "subscription": "sub_mock_0001"
+    }
+  }
+}
