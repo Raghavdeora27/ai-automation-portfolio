@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Support answers from your docs, and a human when the docs run out.**
+
 Customers want fast answers, but an AI that guesses is worse than no AI at all.
+
 - Replies are written only from your own help documents.
 - Weak matches, sensitive topics, or answers without a source go to a teammate in Slack.
 - The customer hears "a teammate will follow up" instead of a confident wrong answer.
+
 **Who it's for:** support teams with a real knowledge base who want the easy questions handled.
+
 **Tools:** Supabase (document search), OpenAI or Claude, Slack, on n8n.
 
 ## Business problem

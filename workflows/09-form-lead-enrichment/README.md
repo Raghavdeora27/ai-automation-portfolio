@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Your best leads get called first, automatically.**
+
 Form leads sit in a list until someone researches them, so the keen ones wait behind everyone else.
+
 - Each Typeform or Tally submission is read, scored, and saved to HubSpot.
 - Strong leads are assigned straight away, with a Slack ping to the owner.
 - Weaker leads are still saved for nurturing, not dropped on someone's plate.
+
 **Who it's for:** teams with inbound forms who want HubSpot to show who to call first.
+
 **Tools:** Typeform or Tally, OpenAI, HubSpot, Slack, on Make.
 
 ## Business problem

@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Stripe gets paid, QuickBooks gets the invoice, the customer gets a receipt.**
+
 Finance shouldn't have to retype every sale, and they definitely shouldn't do it twice.
+
 - Each paid Stripe checkout becomes one QuickBooks invoice and one receipt email.
 - Repeat notifications from Stripe never create a second invoice or email.
 - Sales tax uses the code your accountant confirms.
+
 **Who it's for:** businesses selling through Stripe and keeping books in QuickBooks Online.
+
 **Tools:** Stripe, QuickBooks Online, Resend, on n8n.
 
 ## Business problem

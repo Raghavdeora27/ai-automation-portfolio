@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Hear about a broken workflow before your customer does.**
+
 Automations fail quietly inside whichever tool ran them, and you usually find out from an annoyed customer.
+
 - Every workflow reports failures to one Slack channel.
 - A weekday digest shows what ran, what failed, and what's waiting on a person.
 - One log holds the full history, so the morning check takes one place, not three.
+
 **Who it's for:** anyone running more than a couple of automations who'd like to sleep well.
+
 **Tools:** Slack, Supabase, on n8n (Make and Zapier workflows report here too).
 
 ## Business problem

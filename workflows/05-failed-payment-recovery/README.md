@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Win back failed payments without nagging people who've already paid.**
+
 A failed card quietly turns into lost revenue, or a reminder lands an hour after the customer fixed it.
+
 - A failed Stripe invoice starts a short, friendly reminder sequence.
 - The moment it's paid, the reminders stop.
 - No extra charges are attempted; Stripe's own retries stay in charge.
+
 **Who it's for:** subscription businesses on Stripe.
+
 **Tools:** Stripe, Resend, on n8n.
 
 ## Business problem

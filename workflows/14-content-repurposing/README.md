@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Publish once, get your LinkedIn and X drafts for free.**
+
 Rewriting every article for LinkedIn and X takes hours, and auto-posting unreviewed drafts is risky.
+
 - A link to your article becomes a LinkedIn draft and a short post for X.
 - Both wait in Notion until you approve, edit or reject them in Slack.
 - Nothing is published until you've read it.
+
 **Who it's for:** founders and marketers who publish on their own site.
+
 **Tools:** OpenAI, Notion, Slack, on Zapier.
 
 ## Business problem

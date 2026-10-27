@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Payment in, invoice out. Nobody touches a spreadsheet.**
+
 Every Razorpay payment still needs a GST invoice and a receipt, and on a busy day someone either forgets one or raises it twice.
+
 - Each captured payment becomes exactly one Zoho Books invoice and one receipt email.
 - If Razorpay sends the same payment again, nothing duplicates.
 - GST follows the rate and state your accountant sets, so the books stay clean at filing time.
+
 **Who it's for:** businesses in India and the GCC that take payments on Razorpay and keep books in Zoho.
+
 **Tools:** Razorpay, Zoho Books, Resend, on n8n.
 
 ## Business problem

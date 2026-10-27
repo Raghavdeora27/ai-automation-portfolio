@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Your inbox, sorted before you've had your coffee.**
+
 Real leads hide between support questions and cold pitches, and they wait until someone has time to copy them into the CRM.
+
 - Every new email is labelled as a lead, support, spam, or "needs a human".
 - Leads land in HubSpot with the details the email actually contains.
 - Hot leads ping you in Slack, with a suggested reply waiting for a person to send.
+
 **Who it's for:** small teams running a shared Gmail inbox with HubSpot as the CRM.
+
 **Tools:** Gmail, OpenAI, HubSpot, Slack, on n8n.
 
 ## Business problem

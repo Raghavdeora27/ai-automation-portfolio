@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **A new hire's first day, set up before they walk in.**
+
 Accounts, welcome emails and checklists usually live on three different lists, and something always gets missed.
+
 - The company email account is created in Google Workspace.
 - A ClickUp checklist opens for the manager and IT.
 - The new hire gets one welcome email, and the manager gets reminders until every task is done.
+
 **Who it's for:** small teams on Google Workspace who track work in ClickUp.
+
 **Tools:** Google Workspace, ClickUp, on Make.
 
 ## Business problem

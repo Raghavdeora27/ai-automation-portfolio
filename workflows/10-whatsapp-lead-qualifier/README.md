@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Qualify WhatsApp enquiries while you're busy doing the actual work.**
+
 Every enquiry gets the same three questions from a person, and then the answers get copied into the CRM by hand.
+
 - The chat asks what they need, when, and their budget.
 - Qualified leads get your booking link instantly.
 - Every conversation is saved in HubSpot, qualified or not.
+
 **Who it's for:** businesses whose first enquiries arrive on WhatsApp.
+
 **Tools:** WhatsApp, OpenAI, HubSpot, on Make.
 
 ## Business problem

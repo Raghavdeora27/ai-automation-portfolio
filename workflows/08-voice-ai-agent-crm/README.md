@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Your AI receptionist takes the call, and the CRM takes the notes.**
+
 A great call is wasted if someone has to replay it and type the details in later.
+
 - Each finished call becomes a HubSpot contact.
 - If the caller asked for a next step, the right owner gets a task.
 - Only details the caller actually gave are saved.
+
 **Who it's for:** teams answering calls with a voice agent and managing their pipeline in HubSpot.
+
 **Tools:** VAPI, OpenAI, HubSpot, on n8n.
 
 ## Business problem

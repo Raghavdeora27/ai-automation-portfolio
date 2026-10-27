@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **Vendor bills booked without retyping, and nothing posts without your yes.**
+
 Supplier invoices arrive as PDFs, get retyped by hand, and occasionally get entered twice.
+
 - Vendor, invoice number, date and total are read straight from the PDF.
 - A person approves or rejects each bill in Slack with one click.
 - Only approved bills go into QuickBooks or Xero, and payments stay in your hands.
+
 **Who it's for:** finance teams receiving supplier invoices by email.
+
 **Tools:** OpenAI, QuickBooks or Xero, Slack, on Make.
 
 ## Business problem

@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **The call ends, and the CRM is already up to date.**
+
 The useful bits of a call get lost in the transcript, and the follow-up everyone agreed on has no owner.
+
 - Each finished call becomes a short, readable note on the Zoho CRM record.
 - Tasks are created only for things someone actually agreed to do, with due dates only when one was said.
 - Nothing is emailed to the customer automatically.
+
 **Who it's for:** sales and account teams on Zoho CRM who record their calls.
+
 **Tools:** OpenAI, Zoho CRM, on n8n.
 
 ## Business problem

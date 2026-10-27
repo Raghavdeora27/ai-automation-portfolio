@@ -10,11 +10,15 @@ Standards: [../../docs/engineering-standards.md](../../docs/engineering-standard
 ## For you
 
 **The right email at the right moment, based on what customers actually do.**
+
 A customer who just paid shouldn't get a "please come back" email, but that's what happens when lists are updated by hand.
+
 - Stripe subscription events update the customer in Loops automatically.
 - The matching journey starts: welcome, renewal, failed payment, or cancellation.
 - Your email copy stays in Loops, where your team already edits it.
+
 **Who it's for:** subscription businesses on Stripe that send lifecycle emails from Loops.
+
 **Tools:** Stripe, Loops, on Zapier.
 
 ## Business problem
