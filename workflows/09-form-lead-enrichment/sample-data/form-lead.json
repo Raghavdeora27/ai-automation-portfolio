@@ -1,0 +1,10 @@
+{
+  "source": "typeform",
+  "submission_id": "tf_response_mock_0001",
+  "submitted_at": "2026-10-15T09:00:00Z",
+  "name": "Example Lead",
+  "email": "lead@example.com",
+  "company": "Example Studio",
+  "website": "https://example.com",
+  "message": "We need Stripe payments to create QuickBooks invoices. We want to start in November. Can someone walk us through how this would work?"
+}

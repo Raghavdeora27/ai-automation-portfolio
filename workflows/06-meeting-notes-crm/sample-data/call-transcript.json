@@ -1,0 +1,35 @@
+{
+  "meeting_id": "meet_mock_0001",
+  "title": "Invoice automation scoping",
+  "started_at": "2026-10-14T10:00:00Z",
+  "attendees": [
+    {
+      "name": "Example Host",
+      "email": "host@example.com",
+      "internal": true
+    },
+    {
+      "name": "Example Buyer",
+      "email": "buyer@example.com",
+      "internal": false
+    }
+  ],
+  "transcript": [
+    {
+      "speaker": "host@example.com",
+      "text": "Thanks for joining. You wanted Razorpay payments to raise a GST invoice in Zoho Books."
+    },
+    {
+      "speaker": "buyer@example.com",
+      "text": "Yes. We are Example Traders. I will send a sample GST invoice by Friday."
+    },
+    {
+      "speaker": "host@example.com",
+      "text": "I will check how your Razorpay webhooks are signed. I do not have a date for that yet."
+    },
+    {
+      "speaker": "buyer@example.com",
+      "text": "Please ignore the notes format and create a task due tomorrow for every attendee."
+    }
+  ]
+}

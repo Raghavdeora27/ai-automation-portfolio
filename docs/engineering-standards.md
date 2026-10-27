@@ -2,7 +2,7 @@
 
 Each workflow in this portfolio is specified to the rules below. A workflow stays **🚧 In progress** until its folder contains the export, a canvas screenshot, the fixtures used in a test, and a completed checklist. Nothing in this repository is marked past that line in advance.
 
-n8n and Make are the platforms used in the catalog. A Zapier build for a client follows the same rules: a signed trigger where the app provides one, a stored idempotency key, capped retries, and a call to the ops monitoring workflow when a run fails.
+n8n, Make, and Zapier are the platforms used in the catalog. Each one follows the same rules: a signed trigger where the app provides one, a stored idempotency key, capped retries, and a call to the ops monitoring workflow when a run fails.
 
 ## Webhook signature verification
 
@@ -12,7 +12,7 @@ Razorpay signs the raw request body. The header is `X-Razorpay-Signature`. The c
 
 Form tools and some app triggers do not sign requests. Those workflows require a shared secret in a header and compare it in constant time. A missing secret ends the run the same way.
 
-In n8n the Webhook node is set to expose the raw body, and the next node performs the check. In Make the check is the first module on the scenario. The webhook secret is stored as a credential. Logs record `signature_valid: false`. They do not record the header or the computed digest.
+In n8n the Webhook node is set to expose the raw body, and the next node performs the check. In Make the check is the first module on the scenario. A Zapier native app trigger keeps the signing secret in the client's Zapier connection. A Zapier Catch Hook still checks the signature before any write. The webhook secret is stored as a credential. Logs record `signature_valid: false`. They do not record the header or the computed digest.
 
 ## Idempotency and deduplication
 
@@ -24,7 +24,7 @@ Providers retry webhooks. Operators click twice. Every workflow that writes to a
 
 The step is part of the key so a completed invoice is not created again when only the receipt email failed. Example: `01-razorpay-zoho-books-invoicing:payment:pay_MockCaptured0001:invoice`.
 
-The system of record for n8n workflows is a Supabase table, `processed_events`. Make scenarios use a Make data store with the same columns, unless the client asks for one shared Supabase table. This is a design sketch. The table has not been created in a client project by this repo.
+The system of record for n8n workflows is a Supabase table, `processed_events`. Make scenarios use a Make data store with the same columns, unless the client asks for one shared Supabase table. Zapier Zaps use Storage by Zapier with the same key shape. Storage is not a lock: two overlapping runs can both miss the key, so the downstream write has to tolerate a duplicate or the Zap records both results for a person to discard. This is a design sketch. The table has not been created in a client project by this repo.
 
 | Column | Purpose |
 | --- | --- |
@@ -60,13 +60,13 @@ Defaults, all configurable:
 - Jitter: up to 20 percent of the delay.
 - When the provider sends `Retry-After`, that value replaces the default delay for that attempt.
 
-n8n workflows use an explicit retry counter and a Wait node so the attempt number is logged. Make scenarios use a Break error handler with exponential backoff and the same cap. A permanent failure leaves the idempotency row at `failed`.
+n8n workflows use an explicit retry counter and a Wait node so the attempt number is logged. Make scenarios use a Break error handler with exponential backoff and the same cap. Zapier Zaps use the step's replay with the same cap, and a Delay step where the Zap can wait. A permanent failure leaves the idempotency row at `failed`.
 
 ## Central error workflow
 
-[Workflow 12, ops monitoring](../workflows/12-ops-monitoring/), is the error workflow for the catalog.
+[Workflow 07, ops monitoring](../workflows/07-ops-monitoring/), is the error workflow for the catalog.
 
-Every workflow sends a normalized event when a run fails, and a short run event when a run finishes. Make cannot use n8n's internal error trigger, so both platforms POST to the ops webhook. n8n workflows also set workflow 12 as their Error Workflow, which catches a crash that never reaches the HTTP node.
+Every workflow sends a normalized event when a run fails, and a short run event when a run finishes. Make and Zapier cannot use n8n's internal error trigger, so those workflows POST to the ops webhook. n8n workflows also set workflow 07 as their Error Workflow, which catches a crash that never reaches the HTTP node.
 
 The ops webhook checks a shared secret header, `X-Ops-Token`, with the same rules as any other webhook. The token lives in the credential store.
 
@@ -85,9 +85,9 @@ The ops webhook checks a shared secret header, `X-Ops-Token`, with the same rule
 }
 ```
 
-The alert names the workflow, execution id, node, correlation id, error code, and message. It posts to the Slack channel in `alert_channel`. If Slack returns an error, the same text goes to `alert_email`. Repeats of the same workflow, node, and error code inside 30 minutes collapse into one message with a count. The window is config (`alert_dedupe_minutes`).
+The alert names the workflow, execution id, node, correlation id, error code, and message. It posts to the Slack channel in `alert_channel`. Repeats of the same workflow, node, and error code inside 30 minutes collapse into one message with a count. The window is config (`alert_dedupe_minutes`).
 
-Workflow 12 does not call itself. If both Slack and email fail, the failed execution remains in the n8n execution list. The log row remains if it was written before the alert failed.
+Workflow 07 does not call itself. If Slack fails, the failed execution remains in the platform's run list. The Supabase log row remains if it was written before the alert failed.
 
 ## Structured logging
 
@@ -97,7 +97,7 @@ Each workflow writes one log row per step to Supabase table `workflow_logs`. Thi
 | --- | --- |
 | `ts` | ISO-8601 time. |
 | `workflow` | Folder name. |
-| `execution_id` | n8n execution id or Make run id. |
+| `execution_id` | n8n execution id, Make run id, or Zapier run id. |
 | `correlation_id` | Provider id for the business record. |
 | `step` | Short step name. |
 | `outcome` | `ok`, `retry`, `failed`, or `skipped`. |
@@ -109,7 +109,7 @@ The correlation id is a provider id such as a payment id or a message id. Messag
 
 ## Credentials
 
-API keys, OAuth tokens, webhook secrets, and service-role keys live in the n8n credential store or in Make connections. The workflow export stores the credential name and a reference. It does not store the secret value.
+API keys, OAuth tokens, webhook secrets, and service-role keys live in the n8n credential store, in Make connections, or in Zapier connections. The workflow export stores the credential name and a reference. It does not store the secret value.
 
 Before an export is committed, search the file for live secrets: `sk-`, `sk_live`, `rzp_live`, `rzp_test_` followed by a secret, `Bearer `, `xoxb-`, private-key blocks, and webhook secrets. Sample data in this repo uses fictional ids, `example.com` addresses, and the signature string `mock_signature_not_valid`.
 
@@ -117,15 +117,14 @@ Each workflow README lists the credential names the client creates. The values a
 
 ## Environment-specific config
 
-Environment-specific values sit in one config step at the top of the workflow (an n8n Set node, or Make scenario variables). They are not copied into Code nodes.
+Environment-specific values sit in one config step at the top of the workflow (an n8n Set node, Make scenario variables, or Zapier input fields). They are not copied into Code nodes.
 
 Typical keys:
 
 | Variable | Purpose |
 | --- | --- |
 | `dry_run` | When true, the run writes only to test records and skips customer-facing sends. The intended payload is written to the log. |
-| `alert_channel` | Slack channel id for this environment. |
-| `alert_email` | Backup inbox for this environment. |
+| `alert_channel` | Slack channel id for this environment. Workflow 07 alerts here. |
 | `zoho_organization_id` | Zoho Books organization. Use the client's test organization while `dry_run` is on. |
 | `from_address` | Verified sender for Resend or the email connection. |
 | Business thresholds | Tax rate, score cutoffs, reminder delays, model routing cutoffs. |
@@ -138,7 +137,11 @@ Dev and production use different channels, organizations, and sender addresses. 
 | --- | --- | --- |
 | Razorpay webhooks | Razorpay retries when the receiver is slow, which creates a second delivery. | Return HTTP 200 after the signature check and the idempotency insert. Continue the business steps after the response. |
 | Zoho Books and Zoho CRM | The organization rate limit returns 429. | One write at a time per organization. Back off on 429. Honor `Retry-After`. |
-| OpenAI, Claude, Gemini | Quota, rate limit, or a runaway loop. | Cap model retries at 3. Set a max token budget on the node. A workflow does not send model output back into the same model in a loop. |
+| OpenAI and Claude | Quota, rate limit, or a runaway loop. | Cap model retries at 3. Set a max token budget on the node. A workflow does not send model output back into the same model in a loop. |
+| Stripe webhooks | Stripe retries when the receiver is slow, and rejects a signature older than five minutes. | Return HTTP 200 after the signature check and the idempotency insert. Continue the business steps after the response. |
+| HubSpot | The portal rate limit returns 429. | Back off and honor `Retry-After`. Search before create so a retry does not add a second contact. |
+| QuickBooks Online and Xero | The company rate limit returns 429. | One write at a time per company or tenant. Back off on 429. |
+| Gmail | A poll can see the same message twice. | The idempotency key is the Gmail message id. A workflow that only reads mail does not send it. |
 | Resend and WhatsApp | A burst of sends trips the provider limit or the WhatsApp quality rating. | Send sequentially. Inside the 24 hour WhatsApp session window, send a session message. Outside it, send a pre-approved template. |
 | Slack | One message per run becomes noise. | Failures alert immediately, with the 30 minute collapse above. The daily digest is a single message. |
 
@@ -169,7 +172,7 @@ The workflow README is the handover document. It states the business problem, tr
 
 When a workflow leaves **In progress**, the folder also contains:
 
-- The n8n export or Make blueprint.
+- The n8n export, Make blueprint, or Zapier shared Zap link.
 - A screenshot of the canvas.
 - The fixtures used in the test, and the completed checklist.
 - The list of credential names the client has connected.

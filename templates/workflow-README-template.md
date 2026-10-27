@@ -1,6 +1,6 @@
 # NN — Workflow name
 
-**Platform:** n8n or Make
+**Platform:** n8n, Make, or Zapier
 **Status:** 🚧 In progress
 
 Copy this file to `workflows/NN-short-name/README.md`. After the copy, point the standards links at `../../docs/engineering-standards.md`. The links in this template are correct for `templates/`.
@@ -23,7 +23,7 @@ The event, the system that emits it, and the credential or secret used to accept
 2. Insert or resume the idempotency key.
 3. Do the business steps, in order. Name the system each step writes to.
 4. Mark the key completed only after the side effect succeeds.
-5. On exhausted or permanent failure, POST the ops event to workflow 12.
+5. On exhausted or permanent failure, POST the ops event to workflow 07.
 
 ## Architecture
 
@@ -72,7 +72,7 @@ These boxes are the plan. They have not been executed. Also complete the shared 
 
 Not in this folder yet:
 
-- Workflow export (n8n JSON, or a Make blueprint).
+- Workflow export (n8n JSON, a Make blueprint, or a Zapier shared Zap link).
 - Screenshot of the canvas.
 - The fixture set captured during a real test run.
 

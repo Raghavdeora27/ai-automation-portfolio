@@ -1,0 +1,23 @@
+{
+  "id": "evt_mock_failed_0001",
+  "object": "event",
+  "api_version": "2024-06-20",
+  "created": 1760526002,
+  "type": "invoice.payment_failed",
+  "data": {
+    "object": {
+      "id": "in_mock_0001",
+      "object": "invoice",
+      "customer": "cus_mock_0001",
+      "customer_email": "buyer@example.com",
+      "customer_name": "Example Buyer",
+      "amount_due": 10000,
+      "currency": "usd",
+      "status": "open",
+      "attempt_count": 1,
+      "billing_reason": "subscription_cycle",
+      "hosted_invoice_url": "https://example.com/invoices/in_mock_0001",
+      "subscription": "sub_mock_0001"
+    }
+  }
+}

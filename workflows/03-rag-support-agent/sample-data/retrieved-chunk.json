@@ -1,0 +1,18 @@
+{
+  "matches": [
+    {
+      "chunk_id": "chunk_mock_invoice_download",
+      "document_id": "doc_mock_help_center",
+      "title": "Download an invoice",
+      "similarity": 0.86,
+      "content": "Open Billing, choose the payment, and select Download invoice. The link stays available after the payment status is Paid. If the payment failed, there is no invoice to download."
+    },
+    {
+      "chunk_id": "chunk_mock_unrelated",
+      "document_id": "doc_mock_help_center",
+      "title": "Office hours",
+      "similarity": 0.42,
+      "content": "The support desk replies on weekdays."
+    }
+  ]
+}

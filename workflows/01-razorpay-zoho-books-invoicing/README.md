@@ -83,7 +83,7 @@ Shared retry, dedupe, and alert behavior is in the [engineering standards](../..
 | Zoho Books | `zoho_books_oauth` | Contacts, invoices, and customer payments. |
 | Resend | `resend_api` | Receipt email. |
 | Supabase | `supabase_service_role` | `processed_events` and `workflow_logs`. |
-| Ops monitoring | `ops_webhook` | `X-Ops-Token` and the workflow 12 URL. |
+| Ops monitoring | `ops_webhook` | `X-Ops-Token` and the workflow 07 URL. |
 
 ### Config
 
