@@ -1,16 +1,37 @@
 # AI Automation Portfolio
 
-Production-style automation workflows by [Raghav Deora](https://github.com/Raghavdeora27), an AI automation developer based in Prayagraj, India.
+Hi, I'm Raghav Deora. I build AI products and automations that take repetitive work off your team's plate: invoicing, lead follow-up, support replies, approvals, and onboarding. You get the hours back. Invoices go out the moment a payment lands, leads stop slipping through the cracks, retyping errors disappear, and a person still signs off on the decisions that matter.
 
-Raghav builds workflows for payments, CRM, finance, support, and internal operations. The catalog runs on n8n, Make, and Zapier. Most of the workflows use the tools international clients already run: Stripe, HubSpot, QuickBooks, Xero, Slack, Gmail, and OpenAI, with Claude where a longer answer helps. Razorpay, Zoho Books, and Zoho CRM stay in the catalog for India and GCC work. He was previously an operations manager and has a Lean Six Sigma background, so each spec names the exception path as well as the happy path.
+### I built this for my own business first
 
-This repository is a public catalog of those designs for Upwork and direct freelance clients, and for technical reviewers. Every workflow below is **in progress**. Nothing has been built yet. A workflow ships either live on the client's sandbox or test-mode account, or in mock mode with the pinned fictional payloads in `sample-data/` and a `dry_run` flag. Each folder lists the credentials to plug in. Exports are added one folder at a time after the workflow is built and tested. Client names, performance numbers, and testimonials stay out of the repo until a client agrees to publish them.
+I founded [JobRays](https://jobrays.io), an AI career companion that turns a long-term career goal into a daily plan someone can actually follow. Under the hood, it's a set of connected AI engines that work as one system:
 
-Book a working session: <https://calendar.app.google/xPLZuaDusXaS93v17>
+- **Personalised plans.** Engines that map a user's goal into the job roles to target, the skills, courses, and projects for each milestone, and the full journey from today to the goal.
+- **Daily progress tracking.** A tracker that logs what each user does every day and feeds it back, so every plan adjusts to real progress instead of going stale.
+- **Ray, the AI companion.** A chat assistant that knows each user's plan and progress, and routes each task across OpenAI, Gemini, and Claude to balance quality and cost.
+- **The business machinery.** Razorpay payments that become GST invoices in Zoho Books (including international transactions), transactional emails through Resend, and lifecycle journeys in Loops triggered by what users actually do.
+
+I built the product (Next.js, FastAPI, and Supabase on Vercel) and every integration around it. So when I build a workflow for you, it's the same kind of system I trust with my own users and revenue.
+
+### Process first, then automation
+
+Before JobRays, I spent years in operations. As Operations Manager at BlueBox, I used Lean Six Sigma to cut process variability by 25% before we automated anything. As a consultant at Careernet, I guided 6,000+ candidates from interview to onboarding. I'm Lean Six Sigma certified, and I always fix the process before I automate it, because automating a messy handoff just delivers the mess faster.
+
+### Built for a real week, not a demo
+
+A slow API gets retried. A stored ID stops a second invoice, lead, or email from going out. A person approves the steps that should stay human. If something fails, you hear about it before your customer does.
+
+### Your stack, not mine
+
+I work on n8n, Make, and Zapier, with Stripe, HubSpot, QuickBooks, Xero, Slack, Gmail, OpenAI, and Claude. For clients in India and the GCC, I also connect Razorpay and Zoho.
+
+**What you'll find here:** 14 workflow designs, each with the business problem, the flow, the error handling, and sample data. I add the working export and a demo video as each one is built and tested.
+
+📅 [Book a call](https://calendar.app.google/xPLZuaDusXaS93v17) to talk through your workflow.
 
 ## Catalog
 
-Fourteen workflows, grouped by platform. The tools column is what that workflow connects. Sandbox credentials are plugged in at handover. They are not stored in this repo.
+Fourteen workflows, grouped by platform. Pick the one that takes a job off your plate.
 
 ### n8n
 
@@ -43,14 +64,14 @@ Fourteen workflows, grouped by platform. The tools column is what that workflow 
 
 ## How every workflow is built
 
-Each design follows the same engineering bar. The full rules, tables, and test checklist are in [docs/engineering-standards.md](docs/engineering-standards.md).
+I build every workflow to the same standard, so your team can trust it on a busy day. The full rules, tables, and test checklist are in [docs/engineering-standards.md](docs/engineering-standards.md).
 
 - Signed webhooks are verified before any write. App triggers that have no signature use the client's connection, or a shared secret.
 - A stable provider id is stored so a retry does not create a second invoice, lead, task, or email.
 - Transient API failures retry with backoff. Permanent errors stop and alert.
 - Exhausted failures go to [ops monitoring](workflows/07-ops-monitoring/) for a Slack alert. The run history is in Supabase.
 - Credentials live in n8n, Make, or Zapier. Sample files use placeholders and fictional payloads. `dry_run` defaults to true.
-- Each folder has a test checklist. The boxes in this repo have not been run, because the exports are not here yet.
+- Each folder ships with a test checklist that I run before anything goes live.
 
 ## How to import a workflow
 
@@ -128,7 +149,7 @@ Each workflow folder holds a design spec (`README.md`) and a `sample-data/` dire
 
 ## Contact
 
-Raghav Deora — Prayagraj, India.
+I'm Raghav Deora, based in Prayagraj, India. If one of these workflows sounds like your week, I'd love to hear how you handle it today.
 
 - GitHub: <https://github.com/Raghavdeora27>
-- Book a call: <https://calendar.app.google/xPLZuaDusXaS93v17>
+- 📅 Book a call: <https://calendar.app.google/xPLZuaDusXaS93v17>
