@@ -3,15 +3,25 @@
 **Platform:** Make
 **Status:** 🚧 In progress
 
-Design spec only. The Make blueprint is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**A new hire's first day, set up before they walk in.**
+Accounts, welcome emails and checklists usually live on three different lists, and something always gets missed.
+- The company email account is created in Google Workspace.
+- A ClickUp checklist opens for the manager and IT.
+- The new hire gets one welcome email, and the manager gets reminders until every task is done.
+**Who it's for:** small teams on Google Workspace who track work in ClickUp.
+**Tools:** Google Workspace, ClickUp, on Make.
 
 ## Business problem
 
 A new hire is confirmed on a form, and the manager, IT, and the new hire each keep a separate list. The Google Workspace account is created late, the welcome mail goes out late, and the checklist is easy to miss.
 
-When this workflow is built, a new row on the hiring sheet creates the Workspace user, opens a fixed ClickUp checklist, sends one welcome email from Gmail, and reminds the manager while any required task is still open. The checklist in this spec is a starting set the client edits before go-live.
+A new row on the hiring sheet creates the Workspace user, opens a fixed ClickUp checklist, sends one welcome email from Gmail, and reminds the manager while any required task is still open. The checklist in this spec is a starting set the client edits before go-live.
 
 Sample people in this folder are fictional. `example.com` stands in for the client's Workspace domain. Live form submissions are not copied into this public repo.
 
@@ -112,7 +122,7 @@ Mock mode is `dry_run` true, using the pinned row in `sample-data/`. In that fil
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A row whose email is `person@gmail.com` logs an alert and no Workspace call when `workspace_domain` is `example.com`.
 - [ ] `new-hire-form.json` in `dry_run` logs `workspace_user: would_create` for `hire@example.com`, one parent task, four subtasks, and one welcome email.

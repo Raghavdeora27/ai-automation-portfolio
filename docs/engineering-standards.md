@@ -1,6 +1,6 @@
 # Engineering standards
 
-Each workflow in this portfolio is specified to the rules below. A workflow stays **🚧 In progress** until its folder contains the export, a canvas screenshot, the fixtures used in a test, and a completed checklist. Nothing in this repository is marked past that line in advance.
+These are the rules I build every workflow to. A workflow stays **🚧 In progress** until its folder has the export, a screenshot, the fixtures from the test, and a completed checklist.
 
 n8n, Make, and Zapier are the platforms used in the catalog. Each one follows the same rules: a signed trigger where the app provides one, a stored idempotency key, capped retries, and a call to the ops monitoring workflow when a run fails.
 
@@ -24,7 +24,7 @@ Providers retry webhooks. Operators click twice. Every workflow that writes to a
 
 The step is part of the key so a completed invoice is not created again when only the receipt email failed. Example: `01-razorpay-zoho-books-invoicing:payment:pay_MockCaptured0001:invoice`.
 
-The system of record for n8n workflows is a Supabase table, `processed_events`. Make scenarios use a Make data store with the same columns, unless the client asks for one shared Supabase table. Zapier Zaps use Storage by Zapier with the same key shape. Storage is not a lock: two overlapping runs can both miss the key, so the downstream write has to tolerate a duplicate or the Zap records both results for a person to discard. This is a design sketch. The table has not been created in a client project by this repo.
+The system of record for n8n workflows is a Supabase table, `processed_events`. Make scenarios use a Make data store with the same columns, unless the client asks for one shared Supabase table. Zapier Zaps use Storage by Zapier with the same key shape. Storage is not a lock: two overlapping runs can both miss the key, so the downstream write has to tolerate a duplicate or the Zap records both results for a person to discard. This is the table I create in your project at handover.
 
 | Column | Purpose |
 | --- | --- |
@@ -151,7 +151,7 @@ Dev and production use different channels, organizations, and sender addresses. 
 
 Inbound email, PDFs, chat messages, and transcripts are untrusted data. Classification and extraction use a fixed schema. Text inside that content is not a workflow instruction. The test checklist includes one fixture that asks the model to change its category or ignore its rules.
 
-Shared checklist, to be copied into the run notes when a workflow is tested. None of these boxes have been executed for this repository.
+Shared checklist, to be copied into the run notes when a workflow is tested. I run this checklist before a workflow goes live.
 
 - [ ] An invalid signature or shared secret produces no write and no customer message.
 - [ ] The happy-path fixture completes with `dry_run` true.
@@ -164,7 +164,7 @@ Shared checklist, to be copied into the run notes when a workflow is tested. Non
 - [ ] A test with `dry_run` false was run only against the client's test account.
 - [ ] A fixture with an instruction hidden in the content still follows the schema.
 
-Workflow READMEs add the cases that are specific to that flow. Those boxes have not been executed either.
+Workflow READMEs add the cases that are specific to that flow.
 
 ## Handover
 

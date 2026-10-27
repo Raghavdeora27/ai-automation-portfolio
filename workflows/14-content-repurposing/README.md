@@ -3,15 +3,25 @@
 **Platform:** Zapier
 **Status:** 🚧 In progress
 
-Design spec only. A shared Zap link is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Publish once, get your LinkedIn and X drafts for free.**
+Rewriting every article for LinkedIn and X takes hours, and auto-posting unreviewed drafts is risky.
+- A link to your article becomes a LinkedIn draft and a short post for X.
+- Both wait in Notion until you approve, edit or reject them in Slack.
+- Nothing is published until you've read it.
+**Who it's for:** founders and marketers who publish on their own site.
+**Tools:** OpenAI, Notion, Slack, on Zapier.
 
 ## Business problem
 
 A published article has to be rewritten by hand for LinkedIn and for X. Drafts get posted before anyone has read them, or they never get written.
 
-When this workflow is built, a blog URL on the client's own domain becomes one LinkedIn draft and one X draft. Both are stored as a Notion page and wait in a Slack approval queue. This version ends at that queue. Publishing to LinkedIn or X is a separate Zap, after the client has reviewed draft quality.
+A blog URL on the client's own domain becomes one LinkedIn draft and one X draft. Both are stored as a Notion page and wait in a Slack approval queue. Publishing is a later step, after you have read the draft. This workflow stops at Notion and Slack.
 
 ## Trigger
 
@@ -124,7 +134,7 @@ Mock mode is `dry_run` true. The fetch step can be skipped by feeding `article.j
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A URL on `https://example.net` stops when the allowlist is `example.com`.
 - [ ] `article.json` fed in as the fetch result, in `dry_run`, logs one LinkedIn draft, one X draft within 280 characters, and three source points taken from the article.

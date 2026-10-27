@@ -1,17 +1,29 @@
 # NN — Workflow name
 
+Author note, delete after copying: point the standards link at `../../docs/engineering-standards.md`. The link below is correct for `templates/`.
+
 **Platform:** n8n, Make, or Zapier
 **Status:** 🚧 In progress
 
-Copy this file to `workflows/NN-short-name/README.md`. After the copy, point the standards links at `../../docs/engineering-standards.md`. The links in this template are correct for `templates/`.
-
-Design spec only. The workflow export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../docs/engineering-standards.md](../docs/engineering-standards.md)
 
+## For you
+
+**[One line naming the outcome.]**
+[One or two sentences naming the pain.]
+
+- [Outcome.]
+- [Outcome.]
+- [Outcome.]
+
+**Who it's for:** [the team or business.]
+**Tools:** [plain names], on n8n, Make, or Zapier.
+
 ## Business problem
 
-Who is blocked, what they do by hand today, and what the operator should see when the workflow has done its job. Leave client names, volumes, and timings out unless the client has published them.
+The precise behavior, in the present tense. Leave client names, volumes, and timings out unless the client has published them. Do not write "when this workflow is built."
 
 ## Trigger
 
@@ -62,7 +74,7 @@ Secrets live in the platform credential store. The export holds credential names
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed. Also complete the shared checklist in [the engineering standards](../docs/engineering-standards.md).
+I run these before anything goes live. Also complete the shared checklist in [the engineering standards](../docs/engineering-standards.md).
 
 - [ ] Happy-path fixture completes in `dry_run`.
 - [ ] Duplicate delivery does not double-write.

@@ -3,15 +3,25 @@
 **Platform:** Zapier
 **Status:** 🚧 In progress
 
-Design spec only. A shared Zap link is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**The right email at the right moment, based on what customers actually do.**
+A customer who just paid shouldn't get a "please come back" email, but that's what happens when lists are updated by hand.
+- Stripe subscription events update the customer in Loops automatically.
+- The matching journey starts: welcome, renewal, failed payment, or cancellation.
+- Your email copy stays in Loops, where your team already edits it.
+**Who it's for:** subscription businesses on Stripe that send lifecycle emails from Loops.
+**Tools:** Stripe, Loops, on Zapier.
 
 ## Business problem
 
 Subscription events live in Stripe. Lifecycle email lives in Loops. Someone updates contact properties by hand, or a campaign keeps writing to people who already paid.
 
-When this workflow is built, a Stripe billing event updates the Loops contact and sends one Loops event. The email itself stays in the client's Loops account, on that event name. The Zap does not contain email copy, and it does not score churn.
+A Stripe billing event updates the Loops contact and sends one Loops event. The email itself stays in the client's Loops account, on that event name. The email copy stays in Loops. This Zap only sets the event and the contact properties.
 
 ## Trigger
 
@@ -117,7 +127,7 @@ Mock mode is `dry_run` true, using the pinned Stripe events in `sample-data/`. L
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] An event type of `customer.deleted` logs no Loops call.
 - [ ] `invoice-paid.json` in `dry_run` logs Loops event `subscription_renewed`, `planStatus` `active`, and email `buyer@example.com`.

@@ -3,15 +3,25 @@
 **Platform:** Make
 **Status:** 🚧 In progress
 
-Design spec only. The Make blueprint is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Vendor bills booked without retyping, and nothing posts without your yes.**
+Supplier invoices arrive as PDFs, get retyped by hand, and occasionally get entered twice.
+- Vendor, invoice number, date and total are read straight from the PDF.
+- A person approves or rejects each bill in Slack with one click.
+- Only approved bills go into QuickBooks or Xero, and payments stay in your hands.
+**Who it's for:** finance teams receiving supplier invoices by email.
+**Tools:** OpenAI, QuickBooks or Xero, Slack, on Make.
 
 ## Business problem
 
 Vendor bills arrive as email attachments. Someone retypes the vendor, invoice number, date, tax, and total into QuickBooks or Xero. A duplicate PDF can become a second bill, and a bill that has already been approved is harder to undo than one that was never created.
 
-When this workflow is built, a bill email is extracted with a fixed schema. A person approves it in Slack. QuickBooks receives the bill only after that approval. Xero can hold a draft first, because Xero has a draft state, and the draft is authorised only after the same approval. The workflow does not pay the bill.
+A bill email is extracted with a fixed schema. A person approves it in Slack. QuickBooks receives the bill only after that approval. Xero can hold a draft first, because Xero has a draft state, and the draft is authorised only after the same approval. Approval records the bill. It does not send the payment.
 
 ## Trigger
 
@@ -151,7 +161,7 @@ Mock mode is `dry_run` true, using the pinned email and the hand-written extract
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] `inbound-bill-email.json` with no attachment logs an alert and no ledger call.
 - [ ] `extracted-bill.json` in `dry_run`, with `ledger` set to `quickbooks`, logs an approval message for `Northwind Supplies` invoice `INV-2041` and does not log a bill create before approval.

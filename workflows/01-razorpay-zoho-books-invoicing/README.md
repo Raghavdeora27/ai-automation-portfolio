@@ -3,15 +3,25 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Payment in, invoice out. Nobody touches a spreadsheet.**
+Every Razorpay payment still needs a GST invoice and a receipt, and on a busy day someone either forgets one or raises it twice.
+- Each captured payment becomes exactly one Zoho Books invoice and one receipt email.
+- If Razorpay sends the same payment again, nothing duplicates.
+- GST follows the rate and state your accountant sets, so the books stay clean at filing time.
+**Who it's for:** businesses in India and the GCC that take payments on Razorpay and keep books in Zoho.
+**Tools:** Razorpay, Zoho Books, Resend, on n8n.
 
 ## Business problem
 
 A customer pays through Razorpay. Finance then creates a GST invoice in Zoho Books and sends a receipt. When Razorpay redelivers `payment.captured`, a manual process can create a second invoice or a second email.
 
-When this workflow is built, one captured payment produces one Zoho Books invoice and one Resend receipt. A redelivery stops after the idempotency check. Tax rates and the business state come from config that the client's accountant confirms before go-live. This folder does not claim that confirmation has happened.
+One captured payment produces one Zoho Books invoice and one Resend receipt. A redelivery stops after the idempotency check. Tax rates and the business state come from config that the client's accountant confirms before go-live.
 
 ## Trigger
 
@@ -100,7 +110,7 @@ Shared retry, dedupe, and alert behavior is in the [engineering standards](../..
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] The fixture with a bad signature returns 401 and creates no contact, invoice, or email.
 - [ ] The fixture in `dry_run`, with `business_state` UP and `gst_rate_percent` 18, logs taxable value 100000 paise, CGST 9000, and SGST 9000.

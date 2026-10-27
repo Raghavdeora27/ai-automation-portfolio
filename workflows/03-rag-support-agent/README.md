@@ -3,17 +3,27 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Support answers from your docs, and a human when the docs run out.**
+Customers want fast answers, but an AI that guesses is worse than no AI at all.
+- Replies are written only from your own help documents.
+- Weak matches, sensitive topics, or answers without a source go to a teammate in Slack.
+- The customer hears "a teammate will follow up" instead of a confident wrong answer.
+**Who it's for:** support teams with a real knowledge base who want the easy questions handled.
+**Tools:** Supabase (document search), OpenAI or Claude, Slack, on n8n.
 
 ## Business problem
 
 Support questions get answers from memory or from a long search through docs. The answers drift, and a person still has to take the ones the docs cannot settle.
 
-When this workflow is built, a question is answered only from chunks retrieved from the client's Supabase pgvector store. The draft comes from OpenAI or Claude, chosen by the routing table below. When retrieval is weak, the question needs a policy decision, or the draft cannot cite a chunk, the run hands the question to a person in Slack and does not send a factual answer.
+A question is answered only from your own documents. OpenAI or Claude writes the draft, using the rules further down. When retrieval is weak, the question needs a policy decision, or the draft cannot cite a chunk, the run hands the question to a person in Slack and does not send a factual answer.
 
-This repository does not include a client's documents, and it states no measured accuracy.
+Your documents stay in your project. I do not publish an accuracy figure.
 
 ## Trigger
 
@@ -114,7 +124,7 @@ Mock mode is `dry_run` true, using the pinned question and chunk in `sample-data
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A missing `X-Support-Token` returns 401 and does not call Supabase.
 - [ ] The sample question plus the sample chunk, with similarity above the gate and a clear gap, logs the OpenAI route in `dry_run`.

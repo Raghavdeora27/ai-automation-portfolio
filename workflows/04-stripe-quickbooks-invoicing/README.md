@@ -3,15 +3,25 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Stripe gets paid, QuickBooks gets the invoice, the customer gets a receipt.**
+Finance shouldn't have to retype every sale, and they definitely shouldn't do it twice.
+- Each paid Stripe checkout becomes one QuickBooks invoice and one receipt email.
+- Repeat notifications from Stripe never create a second invoice or email.
+- Sales tax uses the code your accountant confirms.
+**Who it's for:** businesses selling through Stripe and keeping books in QuickBooks Online.
+**Tools:** Stripe, QuickBooks Online, Resend, on n8n.
 
 ## Business problem
 
 A customer pays through Stripe. Finance then creates an invoice in QuickBooks Online and sends a receipt. When Stripe redelivers `checkout.session.completed`, a manual process can create a second invoice or a second email.
 
-When this workflow is built, one paid Checkout session produces one QuickBooks invoice and one Resend receipt. A redelivery stops after the idempotency check. Tax codes come from config that the client's accountant confirms before go-live. This folder does not claim that confirmation has happened.
+One paid Checkout session produces one QuickBooks invoice and one Resend receipt. A redelivery stops after the idempotency check. Tax codes come from config that the client's accountant confirms before go-live.
 
 ## Trigger
 
@@ -102,7 +112,7 @@ Mock mode is `dry_run` true, using the pinned file in `sample-data/`. Live mode 
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] The fixture with a bad `Stripe-Signature` returns 401 and creates no customer, invoice, or email.
 - [ ] The fixture in `dry_run`, with a sandbox realm and an item id, logs one invoice for 10000 cents, currency `usd`, `DocNumber` `pi_mock_0001`, and `PrivateNote` `pi_mock_0001`.

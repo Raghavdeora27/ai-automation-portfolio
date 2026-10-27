@@ -3,15 +3,25 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Your AI receptionist takes the call, and the CRM takes the notes.**
+A great call is wasted if someone has to replay it and type the details in later.
+- Each finished call becomes a HubSpot contact.
+- If the caller asked for a next step, the right owner gets a task.
+- Only details the caller actually gave are saved.
+**Who it's for:** teams answering calls with a voice agent and managing their pipeline in HubSpot.
+**Tools:** VAPI, OpenAI, HubSpot, on n8n.
 
 ## Business problem
 
 A voice agent answers the phone, and the useful part of the call stays in a recording. Someone has to listen, then type the contact into HubSpot, and the follow-up depends on whether they remember.
 
-When this workflow is built, a finished VAPI call becomes a HubSpot contact and, when the caller asked for a next step, one HubSpot task. The phone number comes from VAPI. The email comes from the transcript only when the caller states their own address. The workflow does not download the recording.
+A finished VAPI call becomes a HubSpot contact and, when the caller asked for a next step, one HubSpot task. The phone number comes from VAPI. The email comes from the transcript only when the caller states their own address. The workflow does not download the recording.
 
 ## Trigger
 
@@ -121,7 +131,7 @@ Mock mode is `dry_run` true, using the pinned report in `sample-data/`. Live mod
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A missing `X-Vapi-Secret` returns 401 and does not call OpenAI or HubSpot.
 - [ ] `end-of-call-report.json` in `dry_run` logs a HubSpot upsert for phone `+15555550100` and email `lead@example.com`, and one follow-up task.

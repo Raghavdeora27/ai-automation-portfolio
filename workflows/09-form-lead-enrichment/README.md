@@ -3,15 +3,25 @@
 **Platform:** Make
 **Status:** 🚧 In progress
 
-Design spec only. The Make blueprint is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Your best leads get called first, automatically.**
+Form leads sit in a list until someone researches them, so the keen ones wait behind everyone else.
+- Each Typeform or Tally submission is read, scored, and saved to HubSpot.
+- Strong leads are assigned straight away, with a Slack ping to the owner.
+- Weaker leads are still saved for nurturing, not dropped on someone's plate.
+**Who it's for:** teams with inbound forms who want HubSpot to show who to call first.
+**Tools:** Typeform or Tally, OpenAI, HubSpot, Slack, on Make.
 
 ## Business problem
 
 Form leads sit in one list until someone looks up the company, decides who should own the lead, and sends that person a note. High-intent leads wait behind the rest.
 
-When this workflow is built, a Typeform or Tally submission is enriched from the text the person actually wrote, scored with a written rubric, saved to HubSpot, and assigned to an owner only when the score clears the routing table. The owner is notified in Slack. Leads below the floor are saved and are not assigned.
+A Typeform or Tally submission is enriched from the text the person actually wrote, scored with a written rubric, saved to HubSpot, and assigned to an owner only when the score clears the routing table. The owner is notified in Slack. Leads below the floor are saved and are not assigned.
 
 ## Trigger
 
@@ -142,7 +152,7 @@ Mock mode is `dry_run` true, using the pinned file in `sample-data/`. Live mode 
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A missing Typeform signature writes no data-store row.
 - [ ] `form-lead.json` in `dry_run` logs a HubSpot upsert for `lead@example.com` and a score built from the three components.

@@ -3,15 +3,25 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Hear about a broken workflow before your customer does.**
+Automations fail quietly inside whichever tool ran them, and you usually find out from an annoyed customer.
+- Every workflow reports failures to one Slack channel.
+- A weekday digest shows what ran, what failed, and what's waiting on a person.
+- One log holds the full history, so the morning check takes one place, not three.
+**Who it's for:** anyone running more than a couple of automations who'd like to sleep well.
+**Tools:** Slack, Supabase, on n8n (Make and Zapier workflows report here too).
 
 ## Business problem
 
 Each workflow fails in its own execution log. The person who can fix it finds out when a customer complains. A morning check means opening n8n, Make, and Zapier separately.
 
-When this workflow is built, it is the error workflow for the rest of the catalog. Failures post to one Slack channel. The run history stays in Supabase, which is also what the weekday digest reads. The counts in the sample digest are fictional format data. They are not measurements from a running system.
+This is the error workflow for the rest of the catalog. Failures post to one Slack channel. The run history stays in Supabase, which is also what the weekday digest reads. The sample digest uses made-up counts so you can see the layout. They are not results.
 
 ## Trigger
 
@@ -122,7 +132,7 @@ Mock mode is `dry_run` true, using the pinned files in `sample-data/`. Live mode
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A missing token on `workflow-error.json` returns 401 and writes no log row.
 - [ ] The error fixture in `dry_run` logs one Slack alert containing `pay_MockCaptured0001` and `zoho_books_429`.

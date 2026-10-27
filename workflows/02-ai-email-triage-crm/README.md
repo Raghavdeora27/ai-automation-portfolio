@@ -3,15 +3,25 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Your inbox, sorted before you've had your coffee.**
+Real leads hide between support questions and cold pitches, and they wait until someone has time to copy them into the CRM.
+- Every new email is labelled as a lead, support, spam, or "needs a human".
+- Leads land in HubSpot with the details the email actually contains.
+- Hot leads ping you in Slack, with a suggested reply waiting for a person to send.
+**Who it's for:** small teams running a shared Gmail inbox with HubSpot as the CRM.
+**Tools:** Gmail, OpenAI, HubSpot, Slack, on n8n.
 
 ## Business problem
 
 A shared Gmail inbox mixes sales enquiries, support requests, and unsolicited mail. Someone reads each message, decides what it is, and copies the contact into HubSpot. Hot enquiries wait until that person is free.
 
-When this workflow is built, each new message is classified into `lead`, `support`, `spam`, or `other`, the contact fields that are actually present are written to HubSpot, and a draft reply is stored on the contact as an internal note. A hot lead also posts an alert to Slack. The draft is stored for a person to send. This workflow does not send the reply.
+Each new message is classified into `lead`, `support`, `spam`, or `other`, the contact fields that are actually present are written to HubSpot, and a draft reply is stored on the contact as an internal note. A hot lead also posts an alert to Slack. The reply stays in HubSpot until a person sends it.
 
 ## Trigger
 
@@ -138,7 +148,7 @@ Mock mode is `dry_run` true, using the pinned files in `sample-data/`. Live mode
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] `inbound-lead-email.json` in `dry_run` logs category `lead`, `hot_lead` true, and a HubSpot upsert for `lead@example.com`.
 - [ ] `inbound-support-email.json` stays `support` even though the body tells the model to mark it as a hot lead.

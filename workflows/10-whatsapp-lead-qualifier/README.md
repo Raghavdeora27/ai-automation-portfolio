@@ -3,15 +3,25 @@
 **Platform:** Make
 **Status:** 🚧 In progress
 
-Design spec only. The Make blueprint is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Qualify WhatsApp enquiries while you're busy doing the actual work.**
+Every enquiry gets the same three questions from a person, and then the answers get copied into the CRM by hand.
+- The chat asks what they need, when, and their budget.
+- Qualified leads get your booking link instantly.
+- Every conversation is saved in HubSpot, qualified or not.
+**Who it's for:** businesses whose first enquiries arrive on WhatsApp.
+**Tools:** WhatsApp, OpenAI, HubSpot, on Make.
 
 ## Business problem
 
 People enquire on WhatsApp and wait for someone to ask what they need, when they need it, and whether there is a budget. Qualified conversations then have to be copied into HubSpot, and someone has to remember to send a booking link.
 
-When this workflow is built, the scenario asks three questions, scores the answers with a written rubric, saves every completed conversation to HubSpot, and sends the client's booking link only when the score meets the threshold.
+The scenario asks three questions, scores the answers with a written rubric, saves every completed conversation to HubSpot, and sends the client's booking link only when the score meets the threshold.
 
 ## Trigger
 
@@ -121,7 +131,7 @@ Mock mode is `dry_run` true, using the pinned webhook body in `sample-data/`. Li
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A body with a bad `X-Hub-Signature-256` writes no data-store row.
 - [ ] The sample inbound message in `dry_run` logs question 1 and state `awaiting_use_case`.

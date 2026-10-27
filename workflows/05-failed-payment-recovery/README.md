@@ -3,17 +3,27 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**Win back failed payments without nagging people who've already paid.**
+A failed card quietly turns into lost revenue, or a reminder lands an hour after the customer fixed it.
+- A failed Stripe invoice starts a short, friendly reminder sequence.
+- The moment it's paid, the reminders stop.
+- No extra charges are attempted; Stripe's own retries stay in charge.
+**Who it's for:** subscription businesses on Stripe.
+**Tools:** Stripe, Resend, on n8n.
 
 ## Business problem
 
 A Stripe invoice fails and the customer hears nothing, or hears from a campaign that does not know the invoice was paid an hour later. Someone has to remember who already paid before sending another reminder.
 
-When this workflow is built, `invoice.payment_failed` opens one recovery sequence for that invoice: three Resend emails, and nothing else. Every step checks whether the invoice has since been paid. A paid invoice sends nothing further. This workflow does not create a new charge. Stripe's own retry continues on its own.
+`invoice.payment_failed` opens one recovery sequence for that invoice: three Resend emails, and nothing else. Every step checks whether the invoice has since been paid. A paid invoice sends nothing further. This workflow does not create a new charge. Stripe's own retry continues on its own.
 
-The delays below are the spec defaults. They are not a claim about recovery rates.
+The delays below are the defaults. Change them to match how you already follow up.
 
 ## Trigger
 
@@ -112,7 +122,7 @@ Mock mode is `dry_run` true, using the pinned files in `sample-data/`. Live mode
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A bad signature on `invoice-payment-failed.json` creates no sequence.
 - [ ] The failure fixture in `dry_run` logs one sequence for `in_mock_0001` and step `email_1` to `buyer@example.com`.

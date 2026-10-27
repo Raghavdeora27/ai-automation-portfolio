@@ -3,17 +3,25 @@
 **Platform:** n8n
 **Status:** 🚧 In progress
 
-Design spec only. The n8n export is not in this folder yet. The test checklist has not been run.
+The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
+
+## For you
+
+**The call ends, and the CRM is already up to date.**
+The useful bits of a call get lost in the transcript, and the follow-up everyone agreed on has no owner.
+- Each finished call becomes a short, readable note on the Zoho CRM record.
+- Tasks are created only for things someone actually agreed to do, with due dates only when one was said.
+- Nothing is emailed to the customer automatically.
+**Who it's for:** sales and account teams on Zoho CRM who record their calls.
+**Tools:** OpenAI, Zoho CRM, on n8n.
 
 ## Business problem
 
 After a call, the notes sit in a transcript. Action items are easy to lose, and the Zoho CRM record often gets a paste of the whole transcript or nothing at all.
 
-When this workflow is built, a finished transcript becomes a short CRM note and one Zoho CRM task per action the transcript actually states. A due date is set only when the transcript states one. The workflow does not email the external attendees.
-
-This is the Zoho CRM workflow in the catalog, for clients who already run Zoho.
+A finished transcript becomes a short CRM note and one Zoho CRM task per action the transcript actually states. A due date is set only when the transcript states one. The workflow does not email the external attendees.
 
 ## Trigger
 
@@ -124,7 +132,7 @@ Mock mode is `dry_run` true, using the pinned transcript in `sample-data/`. Live
 
 ## Test checklist
 
-These boxes are the plan. They have not been executed.
+I run these before anything goes live.
 
 - [ ] A missing token returns 401 and does not call the model.
 - [ ] `call-transcript.json` in `dry_run`, with a stubbed CRM match for `buyer@example.com`, logs a summary, a task for `buyer@example.com` due `2026-10-16`, and a task for `host@example.com` with an empty due date.
