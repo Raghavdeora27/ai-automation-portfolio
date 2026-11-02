@@ -1,40 +1,45 @@
 # 05 — Failed-payment recovery
 
 **Platform:** n8n
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
 ## For you
 
-**Win back failed payments without nagging people who've already paid.**
+**Get the payment back, then stop the moment it lands.**
 
-A failed card quietly turns into lost revenue, or a reminder lands an hour after the customer fixed it.
+A failed card needs more than a tag on a mailing list. A reminder that arrives after the customer has already paid is just noise.
 
-- A failed Stripe invoice starts a short, friendly reminder sequence.
-- The moment it's paid, the reminders stop.
-- No extra charges are attempted; Stripe's own retries stay in charge.
+- A failed payment opens one recovery sequence: a retry-aware schedule, then reminders on email and on WhatsApp or SMS.
+- Each reminder can carry the card-update link Stripe already sent.
+- A high-value account waits for a person before the last reminder.
+- The moment the invoice is paid, the reminders stop and the recovered amount is logged.
 
-**Who it's for:** subscription businesses on Stripe.
+**Who it's for:** businesses that bill through Stripe and cannot afford to lose a failed payment in a tag.
 
-**Tools:** Stripe, Resend, on n8n.
+**Tools:** Stripe, Resend, WhatsApp or SMS, Slack, on n8n.
 
 ## Business problem
 
-A Stripe invoice fails and the customer hears nothing, or hears from a campaign that does not know the invoice was paid an hour later. Someone has to remember who already paid before sending another reminder.
+On a failed payment, [workflow 13](../13-stripe-mailchimp-lifecycle/) only adds or updates a Mailchimp subscriber and applies the tag `payment-failed`. Successful payments are tagged there too (`high-value` at $500 or more, `paid-customer` under $500). It does not remind the customer, follow a retry schedule, send a card-update link, escalate a high-value account, or log recovered revenue.
 
-`invoice.payment_failed` opens one recovery sequence for that invoice: three Resend emails, and nothing else. Every step checks whether the invoice has since been paid. A paid invoice sends nothing further. This workflow does not create a new charge. Stripe's own retry continues on its own.
+This workflow is that deeper system. `invoice.payment_failed` opens one sequence for that invoice. Stripe keeps its own retry schedule. This workflow does not create a charge and does not create a PaymentIntent. It reads `attempt_count` and `next_payment_attempt` when they are present, and it does not send a reminder in the hour before Stripe is about to retry, so the customer does not get two asks at once.
+
+Reminders go out on email (Resend) and on WhatsApp or SMS, whichever channel is in config. Every step checks whether the invoice has since been paid. A paid invoice sends nothing further. When the invoice is paid, the run writes a recovered-revenue row: invoice id, amount, currency, and which steps had already been sent. This repo does not add those rows up into a revenue figure.
 
 The delays below are the defaults. Change them to match how you already follow up.
 
 ## Trigger
 
-Two entry points.
+Two entry points, plus the test method.
 
-1. Stripe webhooks `invoice.payment_failed` and `invoice.paid`, verified the same way as [workflow 04](../04-stripe-quickbooks-invoicing/): HMAC-SHA256 of `{timestamp}.{raw body}` against `Stripe-Signature`, with a timestamp tolerance of `stripe_tolerance_seconds`. A failed check returns HTTP 401 and writes nothing.
-2. An n8n schedule that wakes once an hour and sends any step whose `due_at` has passed.
+1. Stripe-format webhooks `invoice.payment_failed` and `invoice.paid`, posted to a signed n8n webhook. The verifier reads `Stripe-Signature` the same way as [workflow 04](../04-stripe-quickbooks-invoicing/): HMAC-SHA256 of `{timestamp}.{raw body}`, compared in constant time, with a timestamp tolerance of `stripe_tolerance_seconds`. A failed check returns HTTP 401 and writes nothing. Signature verification is part of the design.
+2. An n8n schedule that wakes once an hour and sends any step whose `due_at` has passed, unless that step is inside the quiet hour before `next_payment_attempt`.
+
+This design is written for Stripe events, and it does not assume a live Stripe account is connected while it is being tested. Testing sends Stripe-format events to that signed webhook. That is the same approach as [workflow 13](../13-stripe-mailchimp-lifecycle/): Stripe-format payloads stand in until a real Stripe webhook can point at the endpoint. Workflow 13 stops at a Mailchimp tag. This workflow verifies the signature and runs recovery.
 
 Any other event name is acknowledged and ignored.
 
@@ -44,41 +49,46 @@ The sample failure is [`sample-data/invoice-payment-failed.json`](sample-data/in
 
 1. Verify the signature. Ignore events other than `invoice.payment_failed` and `invoice.paid`.
 2. The event key is `05-failed-payment-recovery:event:{event_id}`. A duplicate event id stops.
-3. The sequence key is the invoice id: `05-failed-payment-recovery:invoice:{invoice_id}:sequence`. Many Stripe event ids can belong to one invoice. They share one sequence.
-4. For `invoice.paid`, mark the sequence `stopped` with reason `paid` when one exists, and send nothing. If no sequence exists, record the event key and stop.
-5. For `invoice.payment_failed`, if the sequence is `stopped` or `completed`, stop. If no sequence exists, create one with status `active` and schedule step `email_1` at `due_at = now`. Store `customer_email`, `customer_name`, `amount_due`, `currency`, `hosted_invoice_url`, and `attempt_count`. A later failure for the same invoice updates `attempt_count` and does not restart the delays.
+3. The sequence key is the invoice id: `05-failed-payment-recovery:invoice:{invoice_id}:sequence`. Many event ids can belong to one invoice. They share one sequence.
+4. For `invoice.paid`, mark the sequence `stopped` with reason `paid` when one exists, write the recovered-revenue row, and send nothing. If no sequence exists, write `outcome: paid_without_sequence` and stop.
+5. For `invoice.payment_failed`, if the sequence is `stopped` or `completed`, stop. If no sequence exists, create one with status `active` and schedule step `email_1` at `due_at = now`. Store `customer_email`, `customer_name`, `amount_due`, `currency`, `hosted_invoice_url`, `attempt_count`, and `next_payment_attempt` when it is present. A later failure for the same invoice updates `attempt_count` and does not restart the delays. On an invoice event the amount is `amount_due`, not `amount`.
 6. Require `customer_email` and a positive `amount_due`. When the email is missing, create no sequence and alert with the invoice id.
-7. The hourly runner selects `active` sequences with a due step.
-8. Before each send, retrieve the Stripe invoice. If `status` is `paid`, or an `invoice.paid` event has already stopped the sequence, mark it `stopped` / `paid` and send nothing.
-9. Also stop when the sequence was stopped by a person (`stopped` / `manual`).
+7. The hourly runner selects `active` sequences with a due step. A step whose `due_at` falls in the hour before `next_payment_attempt` waits until the next run.
+8. Before each send, retrieve the invoice. If `status` is `paid`, or an `invoice.paid` event has already stopped the sequence, mark it `stopped` / `paid`, write the recovered-revenue row, and send nothing.
+9. Also stop when a person has stopped the sequence (`stopped` / `manual`).
 10. Steps, in order. Each step has its own idempotency key `05-failed-payment-recovery:invoice:{invoice_id}:{step}` so a retry does not send that step twice.
 
 | Step | When | Action |
 | --- | --- | --- |
-| `email_1` | Immediately | Resend email with the amount, currency, and `hosted_invoice_url` when one is present. |
-| `email_2` | 3 days after `email_1` was sent | Second Resend email, only if the invoice is still unpaid. |
-| `email_3` | 7 days after `email_1` was sent | Third Resend email, only if the invoice is still unpaid. |
+| `email_1` | Immediately, unless Stripe's next retry is inside the quiet hour | Resend email with the amount, currency, and `hosted_invoice_url` when one is present. That link is the card-update link. The workflow does not invent a URL. |
+| `message_2` | 3 days after `email_1` was sent | WhatsApp if `channel` is `whatsapp`, otherwise SMS. Inside the 24 hour WhatsApp session window, send a session message. Outside it, send the approved template in `whatsapp_template_name`. Include the same card-update link when it is present. |
+| `escalate` | Only when `amount_due` is at or above `high_value_threshold`, and before `email_3` | Slack message to `escalation_channel` with the invoice id, amount, and steps already sent. A person chooses send or stop. Nothing else goes to the customer until they choose. |
+| `email_3` | 7 days after `email_1` was sent, or after the person chooses send | Final Resend email, only if the invoice is still unpaid. |
 
-11. After `email_3` is sent, mark the sequence `completed`. A later `invoice.paid` still moves a completed sequence to `stopped` / `paid` so reports can tell the two endings apart. No further messages are sent either way.
+11. After `email_3` is sent, or after a person chooses stop, mark the sequence `completed` or `stopped` / `manual`. A later `invoice.paid` still moves it to `stopped` / `paid` and writes the recovered-revenue row, so a report can tell a recovered invoice from one that ran out of steps.
 
-`hosted_invoice_url` comes from the Stripe invoice. When it is absent, the email omits the link and the run alerts once. The sequence still records the failure so a person can follow up. The workflow does not invent a URL and does not create a PaymentIntent.
+`high_value_threshold` is unset until the client sets it, in major units. While it is unset, `escalate` does not run and no account is treated as high-value. The workflow does not invent a cutoff.
+
+`hosted_invoice_url` comes from the invoice payload. When it is absent, the message omits the link and the run alerts once. The sequence still continues so a person can follow up.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-  failed["Stripe invoice.payment_failed"] --> verify["Verify Stripe-Signature on raw body"]
+  failed["Stripe-format invoice.payment_failed"] --> verify["Verify Stripe-Signature on raw body"]
   verify -->|invalid| reject["Return 401 and stop"]
-  verify -->|valid| eventKey["Insert Stripe event key"]
+  verify -->|valid| eventKey["Insert event key"]
   eventKey --> sequence["Open or load sequence by invoice id"]
-  paid["Stripe invoice.paid"] --> stopPaid["Mark sequence stopped, paid"]
-  schedule["Hourly schedule"] --> due["Select due steps"]
+  paid["Stripe-format invoice.paid"] --> recovered["Stop sequence and log recovered amount"]
+  schedule["Hourly schedule"] --> due["Select due steps, skip Stripe's retry hour"]
   sequence --> due
   due --> paidCheck{"Invoice status is paid"}
-  paidCheck -->|yes| stopPaid
-  paidCheck -->|no| manual{"Manual stop"}
-  manual -->|yes| stopOther["Mark sequence stopped"]
-  manual -->|no| send["Send the due Resend email"]
+  paidCheck -->|yes| recovered
+  paidCheck -->|no| high{"At or above high-value threshold"}
+  high -->|yes, before last email| person["Slack: person chooses send or stop"]
+  high -->|no| send["Email, then WhatsApp or SMS"]
+  person -->|send| send
+  person -->|stop| manual["Mark sequence stopped"]
   send --> next["Schedule the next step"]
   send -->|transient error| retry["Retry with backoff"]
   retry -->|exhausted| alert["Ops monitoring alert"]
@@ -86,52 +96,72 @@ flowchart TD
 
 ## Error handling and edge cases
 
+Shared retry, dedupe, and alert behavior is in the [engineering standards](../../docs/engineering-standards.md). Cases specific to this workflow:
+
 | Case | Specified behavior |
 | --- | --- |
 | Several `invoice.payment_failed` events for one invoice | One sequence. Later events update `attempt_count` and do not restart the delays. |
-| `invoice.paid` arrives after email 1 | The sequence stops. Email 2 and email 3 are not sent. |
-| Email 1 is still retrying when the schedule wakes | The step key is `in_progress`, so the runner leaves it. It does not send email 2. |
-| The hosted invoice URL is empty | Send the email without a link, alert once, and keep the sequence. |
-| Resend or Stripe returns 429 or 5xx | Shared backoff. The step stays unsent until it succeeds or the attempts are exhausted. |
-| The customer pays by a method that never emits `invoice.paid` to this webhook | The hourly runner's invoice retrieve is the check that does not depend on the webhook. |
-| Amount or email missing on the failure payload | Create no sequence. Alert with the invoice id. |
-| A signature older than five minutes | HTTP 401. No sequence. |
-| The run is asked to charge the card again | It does not. Recovery mail is the only side effect. |
+| `invoice.paid` arrives after email 1 | The sequence stops. Later reminders are not sent. A recovered-revenue row is written for that invoice. |
+| The due time is inside the hour before `next_payment_attempt` | The runner waits. Stripe's retry and this reminder do not land together. |
+| Email 1 is still retrying when the schedule wakes | The step key is `in_progress`, so the runner leaves it. It does not send the next step. |
+| The hosted invoice URL is empty | Send without a link, alert once, and keep the sequence. Do not invent a URL. |
+| Amount is at or above `high_value_threshold` | Slack escalation before `email_3`. No last email until a person chooses send. |
+| `high_value_threshold` is unset | Do not escalate. Do not invent a cutoff. |
+| Resend, WhatsApp, SMS, or Stripe returns 429 or 5xx | Shared backoff. The step stays unsent until it succeeds or the attempts are exhausted. Then alert workflow 07. |
+| WhatsApp outside the 24 hour window and no template is set | Alert and do not send a free-form message. |
+| The customer pays by a method that never emits `invoice.paid` to this webhook | The hourly invoice retrieve is the check that does not depend on the webhook. |
+| Amount or email missing | Create no sequence. Alert with the invoice id. |
+| A signature older than five minutes, or a bad signature | HTTP 401. No sequence. |
+| The run is asked to charge the card again | It does not. Reminders, a card-update link, and a log row are the side effects. |
+| Workflow 13 already tagged the contact | Irrelevant here. This workflow does not read or write Mailchimp. |
+
+## Outcome log
+
+Each finished step and each paid invoice writes one row: workflow, invoice id, step, outcome (`sent`, `skipped_paid`, `skipped_retry_window`, `escalated`, `stopped`, `recovered`), amount, currency, and `occurred_at`. Message bodies and signatures stay out of the row. The recovered row is how a later report can count what came back. This folder does not contain that count.
 
 ## Integrations and credentials
 
-Create these on the client's Stripe test-mode account and Resend sandbox sender. Plug them into the names below. This folder does not hold the secret values.
+Create these in the client's account when the workflow is built. Plug them into the names below. This folder does not hold the secret values. Until a live Stripe account exists, tests use Stripe-format events against the signing secret stored as `stripe_webhook`.
 
 | System | Credential name | Used for |
 | --- | --- | --- |
-| Stripe webhook | `stripe_webhook` | Signature check. Test-mode signing secret. |
-| Stripe API | `stripe_api` | Invoice retrieve before each send. The secret key stays in n8n. Use the test-mode key. |
-| Resend | `resend_api` | The three dunning emails. |
-| Supabase | `supabase_service_role` | Sequence rows, step keys, logs. |
+| Stripe webhook | `stripe_webhook` | Signature check on the raw body. |
+| Stripe API | `stripe_api` | Invoice retrieve before each send. The secret key stays in n8n. |
+| Resend | `resend_api` | Reminder emails. |
+| WhatsApp or SMS | `whatsapp_or_sms` | The second reminder. WhatsApp template outside the session window. |
+| Slack | `slack_bot` | High-value escalation. |
+| Supabase | `supabase_service_role` | Sequence rows, step keys, outcome log. |
 | Ops monitoring | `ops_webhook` | `X-Ops-Token` and the workflow 07 URL. |
 
 ### Config
 
 | Variable | Purpose | Spec default |
 | --- | --- | --- |
-| `dry_run` | Mock mode. Log each email payload. Send no email and retrieve the invoice from the pinned sample rather than the live API. | `true` |
-| `email_2_delay_hours` | Delay after email 1. | `72` |
-| `email_3_delay_hours` | Delay after email 1. | `168` |
+| `dry_run` | Log each message payload and the recovered-revenue row. Send nothing and do not call a live Stripe API. | `true` |
+| `channel` | `whatsapp` or `sms` for step `message_2`. | `whatsapp` |
+| `email_2_delay_hours` | Delay after email 1 for the WhatsApp or SMS step. The config name stays so a client can find it. | `72` |
+| `email_3_delay_hours` | Delay after email 1 for the last email. | `168` |
+| `high_value_threshold` | Major-unit amount that requires a person before `email_3`. | Unset, which does not escalate |
+| `escalation_channel` | Slack channel id for that approval. | Client channel |
+| `whatsapp_template_name` | Template used outside the 24 hour window. | Unset, which alerts instead of sending |
 | `from_address` | Verified Resend sender. | Client domain |
 | `stripe_tolerance_seconds` | Maximum age of the Stripe signature timestamp. | `300` |
 | `schedule_cron` | How often due steps are checked. | `0 * * * *` |
 | `idempotency_stale_minutes` | When an `in_progress` step may be resumed. | `15` |
 
-Mock mode is `dry_run` true, using the pinned files in `sample-data/`. Live mode is `dry_run` false against Stripe test mode, after the webhook secret and the test-mode API key are plugged in. Production keys are out of scope for the first build.
+`dry_run` uses the pinned files in `sample-data/`. A live run uses the signed webhook and the credentials above. Production keys are out of scope for the first build.
 
 ## Test checklist
 
 I run these before anything goes live.
 
 - [ ] A bad signature on `invoice-payment-failed.json` creates no sequence.
-- [ ] The failure fixture in `dry_run` logs one sequence for `in_mock_0001` and step `email_1` to `buyer@example.com`.
+- [ ] The failure fixture in `dry_run` logs one sequence for `in_mock_0001` and step `email_1` to `buyer@example.com`, with the example.com card-update link.
 - [ ] A second `invoice.payment_failed` with a new event id and the same invoice id does not reset the schedule.
-- [ ] `invoice-paid.json` after email 1 is logged leaves email 2 unsent and marks the sequence `stopped` / `paid`.
+- [ ] A due step inside the hour before `next_payment_attempt` logs `skipped_retry_window`.
+- [ ] `invoice-paid.json` after email 1 is logged leaves later steps unsent, marks the sequence `stopped` / `paid`, and logs a recovered row for that invoice.
+- [ ] With `high_value_threshold` set below the fixture amount, the run logs a Slack escalation and does not log `email_3` until a person chooses send.
+- [ ] With `high_value_threshold` unset, the run does not escalate.
 - [ ] Two passes of the runner do not log email 1 twice.
 - [ ] A missing email on the payload alerts and creates no sequence.
 - [ ] The logged payload contains no Stripe secret.
@@ -144,9 +174,9 @@ Not in this folder yet:
 - Screenshot of the canvas.
 - The fixture set captured during a real test run.
 
-`sample-data/` holds fictional Stripe events for mock mode.
+`sample-data/` holds fictional Stripe-format events for review. They are not payments from a client.
 
 | Path | What it is |
 | --- | --- |
-| `sample-data/invoice-payment-failed.json` | Fictional `invoice.payment_failed` body. |
-| `sample-data/invoice-paid.json` | Fictional `invoice.paid` body for the same invoice, used to stop the sequence. |
+| `sample-data/invoice-payment-failed.json` | Fictional `invoice.payment_failed` body. The amount is in `amount_due`. |
+| `sample-data/invoice-paid.json` | Fictional `invoice.paid` body for the same invoice, used to stop the sequence and log the recovery. |

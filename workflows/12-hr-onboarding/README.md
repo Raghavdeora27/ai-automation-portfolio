@@ -1,9 +1,9 @@
 # 12 — HR onboarding
 
 **Platform:** Make
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -19,7 +19,7 @@ Accounts, welcome emails and checklists usually live on three different lists, a
 
 **Who it's for:** small teams on Google Workspace who track work in ClickUp.
 
-**Tools:** Google Workspace, ClickUp, on Make.
+**Tools:** Google Workspace, ClickUp, Slack, on Make.
 
 ## Business problem
 
@@ -31,7 +31,7 @@ Sample people in this folder are fictional. `example.com` stands in for the clie
 
 ## Trigger
 
-A Google Form writes each response to a Google Sheet. The Make Google Sheets module watches that sheet for a new row. Access is the client's Google Workspace connection. There is no HMAC on a Sheets watch.
+Two intakes, same fields. A Google Form writes each response to a Google Sheet, and the Make Google Sheets module watches that sheet for a new row. Access is the client's Google Workspace connection. There is no HMAC on a Sheets watch. A signed HRIS webhook can post the same fields. That request carries `X-Hr-Token`, compared in constant time with credential `hr_webhook`. A missing token creates no user.
 
 The scenario reads only `hr_sheet_id`. A row whose `employee_email` is not on `workspace_domain` alerts and creates nothing. The idempotency key is `12-hr-onboarding:hire:{employee_email}`, stored in the Make data store `processed_events`. A redelivery does not open a second account or a second task list.
 
@@ -42,7 +42,7 @@ The sample body is [`sample-data/new-hire-form.json`](sample-data/new-hire-form.
 1. Require `employee_name`, `employee_email`, `role`, `start_date`, and `manager_email`. A missing required field alerts and creates no user and no tasks.
 2. Require `employee_email` to end with `@` plus `workspace_domain`. Any other domain alerts and stops. The scenario does not create a consumer Gmail account.
 3. Insert the hire key. If it is already `completed`, stop.
-4. Create the Google Workspace user with the Admin SDK.
+4. Post the name, email, role, and start date to Slack and wait for the manager before any account is created. Reject stops the run: no user, no tasks, and no welcome email. On approve, create the Google Workspace user with the Admin SDK.
    - `primaryEmail` is `employee_email`.
    - `changePasswordAtNextLogin` is true.
    - A temporary password is generated in the scenario and passed only to the Admin SDK.
@@ -56,7 +56,7 @@ The sample body is [`sample-data/new-hire-form.json`](sample-data/new-hire-form.
    3. Schedule the manager introduction
    4. Confirm system access
 7. Send one welcome email to `employee_email` through Gmail, from `from_address`, with the start date, the manager name, and the document list. The email does not contain a password. The body is a template the client approves at handover. The spec does not ship that copy as final.
-8. Mark the hire key `completed` and store the Workspace user id and the ClickUp parent task id.
+8. Mark the hire key `completed`, write the outcome log row, and store the Workspace user id and the ClickUp parent task id.
 9. A second scheduled scenario runs each weekday morning. It loads hire keys that are `completed` and whose start date is within `reminder_window_days` (default 14). For each one, if any subtask is still open and the last reminder is older than `reminder_after_hours` (default 48), email the manager through Gmail with the open task names. Record `last_reminder_at` on the data-store row so the same morning does not send two reminders.
 10. When every subtask is closed, send no further reminder. The parent task can be closed by the same pass.
 
@@ -64,11 +64,13 @@ The sample body is [`sample-data/new-hire-form.json`](sample-data/new-hire-form.
 
 ```mermaid
 flowchart TD
-  sheet["New row on the hiring sheet"] --> fields{"Required fields and workspace domain"}
+  sheet["Hiring sheet or signed HRIS webhook"] --> fields{"Required fields and workspace domain"}
   fields -->|no| reject["Alert and stop"]
   fields -->|yes| dedupe["Insert hire key"]
   dedupe -->|already completed| stop["Stop"]
-  dedupe -->|new| user["Create Workspace user"]
+  dedupe -->|new| approve{"Manager approves in Slack"}
+  approve -->|no| stopApproval["Create nothing"]
+  approve -->|yes| user["Create Workspace user"]
   user --> parent["Create ClickUp parent task"]
   parent --> subtasks["Create checklist subtasks"]
   subtasks --> welcome["Send welcome email through Gmail"]
@@ -103,6 +105,8 @@ Create these on the client's Google Workspace tenant and ClickUp workspace. The 
 | System | Credential name | Used for |
 | --- | --- | --- |
 | Google Sheets | `google_sheets` | Watch the hiring sheet. |
+| HRIS webhook | `hr_webhook` | Shared secret for `X-Hr-Token` when the hire arrives by webhook. |
+| Slack | `slack_bot` | Manager approval before the Workspace user is created. |
 | Google Workspace Admin | `google_workspace_admin` | Create the user. |
 | Gmail | `gmail_hr` | Welcome email and manager reminders, sent as `from_address`. |
 | ClickUp | `clickup_oauth` | Parent task and subtasks. |
@@ -123,6 +127,10 @@ Create these on the client's Google Workspace tenant and ClickUp workspace. The 
 | `subtask_names` | Ordered checklist names. | The four defaults in the flow |
 
 Mock mode is `dry_run` true, using the pinned row in `sample-data/`. In that file, `example.com` stands in for `workspace_domain`. Live mode is `dry_run` false against the client's Workspace test user and a ClickUp list the client can delete, after those credentials are plugged in. Production user creation is out of scope for the first build.
+
+## Outcome log
+
+Each hire writes one row: the work email, whether the Workspace user was created, the ClickUp parent id, and how many checklist tasks are still open on a reminder pass. No government id and no temporary password. That is how hires set up, and hires still waiting, can be counted later. This folder does not contain that count.
 
 ## Test checklist
 

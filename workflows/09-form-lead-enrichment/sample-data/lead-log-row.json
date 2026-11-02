@@ -1,0 +1,12 @@
+{
+  "note": "Fictional Lead Log row for review. Not an export from a live sheet and not a client lead. Column names here are illustrative, not a copy of the live header row.",
+  "sheet": "Lead Log",
+  "row": {
+    "name": "Example Lead",
+    "email": "lead@example.com",
+    "company": "Example Studio",
+    "hot": false,
+    "last_contact": "2026-10-10",
+    "status": "new"
+  }
+}

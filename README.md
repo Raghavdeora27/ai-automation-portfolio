@@ -23,9 +23,9 @@ A slow API gets retried. A stored ID stops a second invoice, lead, or email from
 
 ### Your stack, not mine
 
-I work on n8n, Make, and Zapier, with Stripe, HubSpot, QuickBooks, Xero, Slack, Gmail, OpenAI, and Claude. For clients in India and the GCC, I also connect Razorpay and Zoho.
+I work on n8n, Make, and Zapier, with Stripe, HubSpot, QuickBooks, Xero, Slack, Gmail, Google Sheets, Mailchimp, OpenAI, Google Gemini, and Claude. For clients in India and the GCC, I also connect Razorpay and Zoho. Where a Zap should start from an HTTP payload, I use Webhooks by Zapier.
 
-**What you'll find here:** 14 workflow designs, each with the business problem, the flow, the error handling, and sample data. I add the working export and a demo video as each one is built and tested.
+**What you'll find here:** 14 workflows, each with the business problem, the flow, the error handling, and sample data. Three of them are built. The rest are planned to the same standard. I add the working export and a demo video as each one is ready to publish here.
 
 📅 [Book a call](https://calendar.app.google/xPLZuaDusXaS93v17) to talk through your workflow.
 
@@ -37,30 +37,34 @@ Fourteen workflows, grouped by platform. Pick the one that takes a job off your 
 
 | # | Workflow | Platform | Tools | Business problem | Status |
 | --- | --- | --- | --- | --- | --- |
-| 01 | [Razorpay payment to Zoho Books GST invoice and Resend receipt](workflows/01-razorpay-zoho-books-invoicing/) | n8n | Razorpay, Zoho Books, Resend | A captured payment should produce one GST invoice and one receipt email. | 🚧 In progress |
-| 02 | [AI email triage to CRM](workflows/02-ai-email-triage-crm/) | n8n | Gmail, OpenAI, HubSpot, Slack | Inbound Gmail should be classified, filed on the HubSpot contact, and surfaced in Slack when a lead is ready to talk. | 🚧 In progress |
-| 03 | [RAG support agent](workflows/03-rag-support-agent/) | n8n | Supabase pgvector, OpenAI or Claude, Slack | Support answers should come from company documents, with a person taking over in Slack when the docs are not enough. | 🚧 In progress |
-| 04 | [Stripe payment to QuickBooks invoice and Resend receipt](workflows/04-stripe-quickbooks-invoicing/) | n8n | Stripe, QuickBooks Online, Resend | A paid Stripe Checkout should produce one QuickBooks invoice and one receipt email. | 🚧 In progress |
-| 05 | [Failed-payment recovery](workflows/05-failed-payment-recovery/) | n8n | Stripe, Resend | A failed Stripe invoice should start a short dunning sequence that stops as soon as the invoice is paid. | 🚧 In progress |
-| 06 | [Meeting notes to CRM](workflows/06-meeting-notes-crm/) | n8n | OpenAI, Zoho CRM | A call transcript should become a Zoho CRM note and a task only where the transcript states an action. | 🚧 In progress |
-| 07 | [Ops monitoring](workflows/07-ops-monitoring/) | n8n | Slack, Supabase | Every workflow should report failures to Slack, with the run history stored in Supabase. | 🚧 In progress |
-| 08 | [Voice AI agent to CRM](workflows/08-voice-ai-agent-crm/) | n8n | VAPI, OpenAI, HubSpot | A finished voice call should become a HubSpot contact and a follow-up task when the caller asked for one. | 🚧 In progress |
+| 01 | [Razorpay payment to Zoho Books GST invoice and Resend receipt](workflows/01-razorpay-zoho-books-invoicing/) | n8n | Razorpay, Zoho Books, Resend | A captured payment should produce one GST invoice and one receipt email. | 🗺️ Planned |
+| 02 | [AI lead qualification to Sheet and hot-lead alert](workflows/02-ai-email-triage-crm/) | n8n | n8n Form, Google Gemini, Google Sheets, Gmail | A form lead should be scored, logged to a sheet, and emailed: the owner when the lead is hot, the lead when it is not. | ✅ Built (v1) |
+| 03 | [RAG support agent](workflows/03-rag-support-agent/) | n8n | Supabase pgvector, OpenAI or Claude, Slack | Support answers should come from company documents, with a person taking over in Slack when the docs are not enough. | 🗺️ Planned |
+| 04 | [Stripe payment to QuickBooks invoice and Resend receipt](workflows/04-stripe-quickbooks-invoicing/) | n8n | Stripe, QuickBooks Online, Resend, Slack | A paid Stripe Checkout should produce one QuickBooks invoice and one receipt email. | 🗺️ Planned |
+| 05 | [Failed-payment recovery](workflows/05-failed-payment-recovery/) | n8n | Stripe, Resend, WhatsApp or SMS, Slack | A failed payment should start a recovery sequence. Workflow 13 only tags the contact in Mailchimp. | 🗺️ Planned |
+| 06 | [Meeting notes to CRM](workflows/06-meeting-notes-crm/) | n8n | OpenAI, Zoho CRM, Slack | A call transcript should become a Zoho CRM note and a task only where the transcript states an action. | 🗺️ Planned |
+| 07 | [Ops monitoring](workflows/07-ops-monitoring/) | n8n | Slack, Supabase | Every workflow should report failures to Slack, with the run history stored in Supabase. | 🗺️ Planned |
+| 08 | [Voice AI agent to CRM](workflows/08-voice-ai-agent-crm/) | n8n | VAPI, OpenAI, HubSpot, Slack | A finished voice call should become a HubSpot contact and a follow-up task when the caller asked for one. | 🗺️ Planned |
 
 ### Make
 
 | # | Workflow | Platform | Tools | Business problem | Status |
 | --- | --- | --- | --- | --- | --- |
-| 09 | [Form lead to AI enrichment and scoring](workflows/09-form-lead-enrichment/) | Make | Typeform or Tally, OpenAI, HubSpot, Slack | A form lead should be enriched, scored, saved to HubSpot, and sent to the owner in Slack when the score is high enough. | 🚧 In progress |
-| 10 | [WhatsApp lead qualifier](workflows/10-whatsapp-lead-qualifier/) | Make | WhatsApp Business Cloud API, OpenAI, HubSpot | A WhatsApp enquiry should answer a few qualifying questions, get a score, and land in HubSpot. | 🚧 In progress |
-| 11 | [Accounts payable with human approval](workflows/11-accounts-payable-automation/) | Make | OpenAI, QuickBooks or Xero, Slack | A vendor bill received by email should wait for Slack approval before it is created in QuickBooks or Xero. | 🚧 In progress |
-| 12 | [HR onboarding](workflows/12-hr-onboarding/) | Make | Google Workspace, ClickUp | A new-hire form should open the Workspace account and the ClickUp checklist, then remind the manager until the checklist is done. | 🚧 In progress |
+| 09 | [Lead follow-up from a Google Sheets Lead Log](workflows/09-form-lead-enrichment/) | Make | Google Sheets, Gmail | A Lead Log row that is not hot, and that has not been contacted for at least 2 days, should get a Gmail follow-up, and the sheet should get the status back. | ✅ Built (v1) |
+| 10 | [WhatsApp lead qualifier](workflows/10-whatsapp-lead-qualifier/) | Make | WhatsApp Business Cloud API, OpenAI, HubSpot, Slack | A WhatsApp enquiry should answer a few qualifying questions, get a score, and land in HubSpot. | 🗺️ Planned |
+| 11 | [Accounts payable with human approval](workflows/11-accounts-payable-automation/) | Make | OpenAI, QuickBooks or Xero, Slack | A vendor bill received by email should wait for Slack approval before it is created in QuickBooks or Xero. | 🗺️ Planned |
+| 12 | [HR onboarding](workflows/12-hr-onboarding/) | Make | Google Workspace, ClickUp, Slack | A new-hire form should open the Workspace account and the ClickUp checklist, then remind the manager until the checklist is done. | 🗺️ Planned |
 
 ### Zapier
 
 | # | Workflow | Platform | Tools | Business problem | Status |
 | --- | --- | --- | --- | --- | --- |
-| 13 | [Lifecycle email engine](workflows/13-lifecycle-email-engine/) | Zapier | Stripe, Loops | Stripe subscription events should update Loops so the right lifecycle email can send. | 🚧 In progress |
-| 14 | [Content repurposing](workflows/14-content-repurposing/) | Zapier | OpenAI, Notion, Slack | A blog URL should become drafts stored in Notion that wait for Slack approval. | 🚧 In progress |
+| 13 | [Stripe-format payment events to Mailchimp tags](workflows/13-stripe-mailchimp-lifecycle/) | Zapier | Webhooks by Zapier, Formatter by Zapier, Mailchimp | A Stripe-format payment should add or update one Mailchimp subscriber: `high-value` at $500 or more, `paid-customer` under $500, or `payment-failed`. | ✅ Built (v1) |
+| 14 | [Content repurposing](workflows/14-content-repurposing/) | Zapier | OpenAI, Notion, Slack | A blog URL should become drafts stored in Notion that wait for Slack approval. | 🗺️ Planned |
+
+## Flagship builds (coming soon)
+
+Two larger end-to-end production builds, with full blueprints, are in progress.
 
 ## How every workflow is built
 
@@ -112,7 +116,7 @@ When a folder contains a shared link or a template URL:
 When the folder has no shared link yet, rebuild the Zap from the README:
 
 1. Create a Zap in the client's account and leave it off.
-2. Set the trigger named in the README. For Stripe or Slack, use the native app trigger so the connection holds the signing secret. A Catch Hook rebuild has to verify the signature before any write.
+2. Set the trigger named in that workflow's README. Workflow 13 uses Webhooks by Zapier Catch Hook and receives Stripe-format payloads there. A Catch Hook that stands in for a signed app still verifies the signature before any write, which is how workflows 04 and 05 are designed. Slack's own connection holds the Slack signing secret.
 3. Add each action in the flow order: the allowlist filter, the Storage by Zapier idempotency key, the app actions, and the ops webhook step on the error path.
 4. Map fields from the sample payload in `sample-data/`.
 5. Run a test with that sample and `dry_run` on. Turn the Zap on only after the checklist passes.
@@ -141,7 +145,7 @@ When the folder has no shared link yet, rebuild the Zap from the README:
     ├── 10-whatsapp-lead-qualifier/
     ├── 11-accounts-payable-automation/
     ├── 12-hr-onboarding/
-    ├── 13-lifecycle-email-engine/
+    ├── 13-stripe-mailchimp-lifecycle/
     └── 14-content-repurposing/
 ```
 

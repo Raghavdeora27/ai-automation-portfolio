@@ -1,9 +1,9 @@
 # 14 — Content repurposing
 
 **Platform:** Zapier
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -29,7 +29,7 @@ A blog URL on the client's own domain becomes one LinkedIn draft and one X draft
 
 ## Trigger
 
-The Slack slash command `/repurpose`, delivered through the Zapier Slack connection. The command text is a single URL. Slack signs the request. The signing secret stays in the Slack connection.
+Two intakes, same URL body. The Slack slash command `/repurpose`, delivered through the Zapier Slack connection. The command text is a single URL. Slack signs the request. The signing secret stays in the Slack connection. A CMS can POST the same URL when a post is published. That request carries `X-Content-Token`, compared in constant time with credential `content_webhook`. A missing token stops before the fetch.
 
 A manual rebuild that uses a Catch Hook must verify `X-Slack-Signature` (version `v0`, HMAC-SHA256 of the raw body) before any fetch. A failed check stops the Zap.
 
@@ -47,7 +47,7 @@ The sample request is [`sample-data/repurpose-request.json`](sample-data/repurpo
 4. Write the key as `in_progress`. Storage by Zapier is not a lock. Two overlapping runs can both miss the key. The second run still creates a second Notion page rather than overwriting the first. The Slack message names the page id so a person can discard the duplicate.
 5. Fetch the URL. Follow at most three redirects, and only when each redirect stays on `allowed_hosts`. Read the title and the article text. Drop script, style, and navigation regions.
 6. When the extracted text is shorter than 200 characters, alert and stop. Do not draft from a title alone. Mark the key `failed`.
-7. Call OpenAI once for both drafts, with structured output. Temperature is 0.
+7. Call OpenAI as an agent for both drafts, with structured output. Temperature is 0. Tools are `fetch_article` (allowlisted hosts only) and `last_approved_draft` (the newest Notion page for this URL whose status is `Approved`, read-only). Memory for the run is that prior approved draft, so a refresh does not contradict it. The agent does not call LinkedIn or X.
 
 ```json
 {
@@ -69,18 +69,18 @@ A response that breaks a constraint is retried up to 3 times and then stored wit
 8. Create a page in the Notion database `notion_database_id`. Properties: title, source URL, LinkedIn draft, X draft, source points, and status. Status is `Pending` when the checks passed, and `Needs edit` when they did not.
 9. Post one Slack message to `approval_channel` with the title, URL, both drafts, and the Notion page URL.
 10. Approve, Edit, and Reject are Slack replies that update the Notion status to `Approved`, `Needs edit`, or `Rejected`. Approve means a person accepted the wording. It does not call the LinkedIn or X APIs.
-11. Mark the Storage key `completed` with the Notion page id.
+11. Mark the Storage key `completed` with the Notion page id and write the outcome log row.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-  slack["Slack /repurpose"] --> verify["Verify Slack and the allowed host"]
+  slack["Slack /repurpose or signed CMS webhook"] --> verify["Verify the request and the allowed host"]
   verify -->|rejected| stop["Stop"]
   verify -->|allowed| dedupe["Storage key by canonical URL"]
   dedupe -->|fresh page exists| replay["Return the Notion page id"]
   dedupe -->|new| fetch["Fetch the article"]
-  fetch --> draft["OpenAI writes LinkedIn and X drafts"]
+  fetch --> draft["Agent drafts, with the last approved page as memory"]
   draft --> checks{"Length and source-point checks"}
   checks -->|pass| notion["Notion page, status Pending"]
   checks -->|fail after retries| notionEdit["Notion page, status Needs edit"]
@@ -117,6 +117,7 @@ Create these on the client's Slack workspace, OpenAI account, and Notion workspa
 | Slack | `slack_bot` | The `/repurpose` command and the approval queue. |
 | OpenAI | `openai_api` | LinkedIn and X drafts. |
 | Notion | `notion_oauth` | Draft pages in the database named below. |
+| CMS webhook | `content_webhook` | Shared secret for `X-Content-Token` when the URL arrives from the CMS. |
 | Storage by Zapier | `zapier_storage` | URL keys. |
 | Ops monitoring | `ops_webhook` | `X-Ops-Token` and the workflow 07 URL. |
 
@@ -135,6 +136,10 @@ LinkedIn and X connections are not part of this version, because this version do
 | `max_output_tokens` | Cap on the draft call. | `1200` |
 
 Mock mode is `dry_run` true. The fetch step can be skipped by feeding `article.json` in as the page body. Live mode is `dry_run` false against the client's Notion database and Slack channel, and only for hosts on `allowed_hosts`, after those connections are plugged in. Production publishing keys are not part of this folder.
+
+## Outcome log
+
+Each URL writes one row: the canonical URL, the Notion page id, and the status (`Pending`, `Needs edit`, `Approved`, or `Rejected`). That is how drafts created and drafts approved can be counted later. This folder does not contain that count, and it does not record likes or reach.
 
 ## Test checklist
 

@@ -1,6 +1,6 @@
 # Engineering standards
 
-These are the rules I build every workflow to. A workflow stays **🚧 In progress** until its folder has the export, a screenshot, the fixtures from the test, and a completed checklist.
+These are the rules I build every workflow to. A workflow is **🗺️ Planned** while it is a design spec. A workflow is **✅ Built** when it runs on n8n, Make, or Zapier. The export, a screenshot, the fixtures from the test, and a completed checklist are added to the folder when they are ready to publish. Until those files are in the folder, the workflow README says screenshots and exports are coming soon. This repo does not invent them.
 
 n8n, Make, and Zapier are the platforms used in the catalog. Each one follows the same rules: a signed trigger where the app provides one, a stored idempotency key, capped retries, and a call to the ops monitoring workflow when a run fails.
 
@@ -12,7 +12,7 @@ Razorpay signs the raw request body. The header is `X-Razorpay-Signature`. The c
 
 Form tools and some app triggers do not sign requests. Those workflows require a shared secret in a header and compare it in constant time. A missing secret ends the run the same way.
 
-In n8n the Webhook node is set to expose the raw body, and the next node performs the check. In Make the check is the first module on the scenario. A Zapier native app trigger keeps the signing secret in the client's Zapier connection. A Zapier Catch Hook still checks the signature before any write. The webhook secret is stored as a credential. Logs record `signature_valid: false`. They do not record the header or the computed digest.
+In n8n the Webhook node is set to expose the raw body, and the next node performs the check. In Make the check is the first module on the scenario. A Zapier native app trigger keeps the signing secret in the client's Zapier connection. A Zapier Catch Hook that stands in for a signed app checks the signature before any write. Workflow 13 is the current exception: the built Zap receives Stripe-format test payloads on a Catch Hook, because a Stripe account is not available, and Catch Hook cannot verify `Stripe-Signature`. A signature check in front of that hook is planned in that folder. It is not part of the built Zap. The webhook secret is stored as a credential. Logs record `signature_valid: false`. They do not record the header or the computed digest.
 
 ## Idempotency and deduplication
 
@@ -137,13 +137,15 @@ Dev and production use different channels, organizations, and sender addresses. 
 | --- | --- | --- |
 | Razorpay webhooks | Razorpay retries when the receiver is slow, which creates a second delivery. | Return HTTP 200 after the signature check and the idempotency insert. Continue the business steps after the response. |
 | Zoho Books and Zoho CRM | The organization rate limit returns 429. | One write at a time per organization. Back off on 429. Honor `Retry-After`. |
-| OpenAI and Claude | Quota, rate limit, or a runaway loop. | Cap model retries at 3. Set a max token budget on the node. A workflow does not send model output back into the same model in a loop. |
+| OpenAI, Claude, and Gemini | Quota, rate limit, or a runaway loop. | Cap model retries at 3. Set a max token budget on the node. A workflow does not send model output back into the same model in a loop. |
 | Stripe webhooks | Stripe retries when the receiver is slow, and rejects a signature older than five minutes. | Return HTTP 200 after the signature check and the idempotency insert. Continue the business steps after the response. |
 | HubSpot | The portal rate limit returns 429. | Back off and honor `Retry-After`. Search before create so a retry does not add a second contact. |
 | QuickBooks Online and Xero | The company rate limit returns 429. | One write at a time per company or tenant. Back off on 429. |
 | Gmail | A poll can see the same message twice. | The idempotency key is the Gmail message id. A workflow that only reads mail does not send it. |
 | Resend and WhatsApp | A burst of sends trips the provider limit or the WhatsApp quality rating. | Send sequentially. Inside the 24 hour WhatsApp session window, send a session message. Outside it, send a pre-approved template. |
 | Slack | One message per run becomes noise. | Failures alert immediately, with the 30 minute collapse above. The daily digest is a single message. |
+| Mailchimp | A retried add can look like a second subscribe. | Add or update by email, so the audience keeps one contact per address. Back off on 429. |
+| Google Sheets | A watch can see the same row twice. | The idempotency key is the sheet row id, or the business email when the row has no id. |
 
 ## Test data and a test checklist
 
@@ -170,7 +172,7 @@ Workflow READMEs add the cases that are specific to that flow.
 
 The workflow README is the handover document. It states the business problem, trigger, flow, diagram, error handling, credential names, config variables, and test checklist.
 
-When a workflow leaves **In progress**, the folder also contains:
+When a **✅ Built** workflow is ready to publish in this repo, the folder also contains:
 
 - The n8n export, Make blueprint, or Zapier shared Zap link.
 - A screenshot of the canvas.

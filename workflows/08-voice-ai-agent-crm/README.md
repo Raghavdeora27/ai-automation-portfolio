@@ -1,9 +1,9 @@
 # 08 — Voice AI agent to CRM
 
 **Platform:** n8n
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -19,7 +19,7 @@ A great call is wasted if someone has to replay it and type the details in later
 
 **Who it's for:** teams answering calls with a voice agent and managing their pipeline in HubSpot.
 
-**Tools:** VAPI, OpenAI, HubSpot, on n8n.
+**Tools:** VAPI, OpenAI, HubSpot, Slack, on n8n.
 
 ## Business problem
 
@@ -29,7 +29,9 @@ A finished VAPI call becomes a HubSpot contact and, when the caller asked for a 
 
 ## Trigger
 
-VAPI sends an `end-of-call-report` to an n8n webhook. The client sets a server secret on the assistant. The request carries that secret in `X-Vapi-Secret`, or in `Authorization: Bearer` when that is how the assistant is configured. The workflow accepts either header and compares it in constant time with credential `vapi_webhook`. A missing or wrong secret returns HTTP 401 and writes nothing.
+VAPI sends an `end-of-call-report` to an n8n webhook. Another voice platform the client already uses can POST the same body. VAPI is checked with `X-Vapi-Secret`, or with `Authorization: Bearer` when that is how the assistant is configured. The other platform is checked with `X-Voice-Token`. Each secret is compared in constant time with its own credential: `vapi_webhook` or `voice_webhook`. A missing or wrong secret returns HTTP 401 and writes nothing.
+
+During the call, the voice agent has two read-only tools: `lookup_contact` (HubSpot by phone) and `booking_link` (the client's booking URL). Memory is the last stored summary for that phone number, loaded at the start of the call. The agent does not create a deal and does not send email. Those wait until after the call, and only with a person's approval.
 
 Any message type other than `end-of-call-report` is acknowledged and ignored.
 
@@ -64,8 +66,8 @@ The sample is [`sample-data/end-of-call-report.json`](sample-data/end-of-call-re
 6. Keep an email only when the transcript contains that address in a sentence where the caller states it as their own. Drop any other address, including one that appears only inside an instruction to the model. Keep `company` and `name` only when the caller stated them. Empty fields stay empty. The phone number written to HubSpot is `call.customer.number`, not a number from the model.
 7. When `confidence` is below `min_confidence` (default 0.7), or the output breaks the schema after 3 retries, set `voice_outcome` to `needs_review` and do not create a task. Still save the contact when a phone number or a kept email is present.
 8. Search HubSpot contacts by phone, then by email if one was kept. Update the matched contact, or create one. Write a note with the summary, the intent, and the call id. Do not put the recording URL in the note.
-9. When `outcome` is `follow_up` and confidence meets the threshold, create one HubSpot task for `hubspot_owner_id` with the intent as the subject, related to the contact. For `not_a_fit` and `already_customer`, set `voice_outcome` and create no task.
-10. Mark the key completed and store the HubSpot contact id in `result_ref`.
+9. When `outcome` is `follow_up` and confidence meets the threshold, create one HubSpot task for `hubspot_owner_id` with the intent as the subject, related to the contact. For `not_a_fit` and `already_customer`, set `voice_outcome` and create no task. Creating a deal, or sending any email to the caller, waits for Slack approval. The contact and the internal task do not.
+10. Mark the key completed, write the outcome log row, and store the HubSpot contact id in `result_ref`.
 
 For the fictional fixture, the specified extraction keeps `lead@example.com`, drops `admin@example.com`, sets `outcome` to `follow_up`, and uses the phone `+15555550100` from the call object. That is the spec for the fixture. A model has not been run on it in this repo.
 
@@ -106,6 +108,7 @@ flowchart TD
 | Caller number is missing and no email was kept | Alert and stop. Do not create a contact with no handle. |
 | `recordingUrl` is present | Do not fetch it. Do not log it. Do not copy it to HubSpot. |
 | A test call from the VAPI dashboard | Processed the same way. `dry_run` decides whether HubSpot is written. |
+| The run would create a deal or email the caller | Slack approval first. A rejection leaves the contact and the internal task as they are, and sends no email. |
 
 ## Integrations and credentials
 
@@ -114,9 +117,11 @@ Create these on the client's VAPI assistant, OpenAI account, and HubSpot test po
 | System | Credential name | Used for |
 | --- | --- | --- |
 | VAPI | `vapi_webhook` | Server secret for `X-Vapi-Secret` or `Authorization: Bearer`. |
+| Other voice platform | `voice_webhook` | Shared secret for `X-Voice-Token` when a second platform posts the same body. |
 | OpenAI | `openai_api` | Structured extraction from the transcript. |
 | HubSpot | `hubspot_oauth` | Contact search, create, update, notes, and tasks. Use the test portal while `dry_run` is on. |
 | Supabase | `supabase_service_role` | Call keys and logs. |
+| Slack | `slack_bot` | Approval before a deal or an email to the caller. |
 | Ops monitoring | `ops_webhook` | `X-Ops-Token` and the workflow 07 URL. |
 
 ### Config
@@ -132,6 +137,10 @@ Create these on the client's VAPI assistant, OpenAI account, and HubSpot test po
 | `idempotency_stale_minutes` | When an `in_progress` row may be resumed. | `15` |
 
 Mock mode is `dry_run` true, using the pinned report in `sample-data/`. Live mode is `dry_run` false against the client's VAPI assistant and the HubSpot test portal, after those credentials are plugged in. Production keys are out of scope for the first build.
+
+## Outcome log
+
+Each call writes one row: `call_id`, channel, `outcome`, whether a task was created, and whether a person was asked to approve a deal or an email. That is how handled calls can be counted later. This folder does not contain that count.
 
 ## Test checklist
 

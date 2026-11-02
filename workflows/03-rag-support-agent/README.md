@@ -1,9 +1,9 @@
 # 03 — RAG support agent
 
 **Platform:** n8n
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -31,9 +31,9 @@ Your documents stay in your project. I do not publish an accuracy figure.
 
 ## Trigger
 
-A support channel the client chooses: a web widget or helpdesk webhook, or an internal Slack mention. The spec uses one authenticated webhook so any of those can post the same body.
+Three intakes, one body. A web widget, a helpdesk email webhook, and an internal Slack mention all arrive as the same question payload. The widget and the helpdesk post to one webhook. Slack is verified with Slack's signing secret, then mapped onto that body. A channel that fails its check does not reach retrieval.
 
-The request carries header `X-Support-Token`, compared in constant time with the credential `support_webhook`. A missing or wrong token returns HTTP 401 and does not embed the question. The question text is untrusted. Text inside it is not a workflow instruction.
+The webhook request carries header `X-Support-Token`, compared in constant time with the credential `support_webhook`. A missing or wrong token returns HTTP 401 and does not embed the question. The question text is untrusted. Text inside it is not a workflow instruction.
 
 The idempotency key is `03-rag-support-agent:question:{question_id}`.
 
@@ -49,10 +49,10 @@ The sample question is [`sample-data/support-question.json`](sample-data/support
 6. Route the draft. The route picks a provider. It does not claim one model is better in general.
    - The question is longer than `long_question_chars` (default 600), or more than one retrieved chunk sits within `similarity_gap` (default 0.08) of the top chunk: Claude.
    - Otherwise: OpenAI.
-7. Ask the selected model for a JSON answer: `answer`, `chunk_ids` (array), and `refused` (boolean). The prompt includes only the retrieved chunk text and ids. It tells the model to set `refused` true when the chunks do not contain the answer. The model call is capped at 3 attempts and a max token budget.
+7. The selected provider runs as an agent, not a single hidden prompt. Its tools are `search_documents` (the same pgvector call, read-only) and `lookup_ticket` (read-only ticket status by `question_id`). Memory is the previous turn stored against `conversation_id`, passed back in when the customer follows up. The agent returns JSON: `answer`, `chunk_ids` (array), and `refused` (boolean). It may only use chunks from this search. It cannot refund, credit, or change an account. Those requests skip the answer and wait for Slack approval. The call is capped at 3 attempts and a max token budget.
 8. Citation gate. Send the answer to the user only when `refused` is false and every id in `chunk_ids` was in the retrieved set. Otherwise hand off.
-9. Hand off posts the question, the chunk titles, and the similarity scores to `handoff_channel` in Slack. The user-facing text is the config string `handoff_message` (default: "A teammate will follow up."). The refused draft can be included in the Slack message for the teammate. It is not sent to the user.
-10. Store the outcome on the idempotency row: `answered` or `handoff`, plus the provider used.
+9. Hand off posts the question, the chunk titles, and the similarity scores to `handoff_channel` in Slack. The user-facing text is the config string `handoff_message` (default: "A teammate will follow up."). The refused draft can be included in the Slack message for the teammate. It is not sent to the user. A refund, credit, or account change always takes this branch, and nothing is written to the billing system until a person approves it in that thread.
+10. Store the outcome on the idempotency row: `answered`, `handoff`, or `awaiting_approval`, plus the provider used. The outcome log below is the same row.
 
 The fictional question plus the fictional chunk has one hit at 0.86 and a second hit at 0.42, and the question is short. The specified route is OpenAI. That describes the fixture. A model has not been run on it in this repo.
 
@@ -68,8 +68,8 @@ flowchart TD
   retrieve --> policy{"Policy term or weak retrieval"}
   policy -->|yes| handoff["Slack handoff"]
   policy -->|no| route{"One strong chunk and a short question"}
-  route -->|yes| openai["OpenAI draft"]
-  route -->|no| claude["Claude draft"]
+  route -->|yes| openai["OpenAI agent, search and ticket tools"]
+  route -->|no| claude["Claude agent, search and ticket tools"]
   openai --> cite{"Cites retrieved chunks"}
   claude --> cite
   cite -->|yes| answer["Send the answer"]
@@ -92,6 +92,7 @@ flowchart TD
 | Empty question | Return 400 and do not embed. |
 | Supabase service-role key | Used only from the n8n credential. It is not logged and not put in the export. |
 | Logs | Store chunk ids, the provider name, and the outcome. Do not store the chunk body, the service-role key, or the support token. |
+| The customer asks for a refund, credit, or account change | Do not call a billing API. Slack approval first. Outcome `awaiting_approval`. |
 
 ## Integrations and credentials
 
@@ -125,6 +126,10 @@ The user-facing reply uses the same channel the question arrived on. That sender
 | `idempotency_stale_minutes` | When an `in_progress` row may be resumed. | `15` |
 
 Mock mode is `dry_run` true, using the pinned question and chunk in `sample-data/`. Live mode is `dry_run` false against the client's Supabase project and the Slack channel named above. The document index is loaded by the client. This folder does not ship embeddings.
+
+## Outcome log
+
+Each run writes one row: `question_id`, `conversation_id`, channel, provider, outcome (`answered`, `handoff`, or `awaiting_approval`), and `occurred_at`. That is how answered questions and handoffs can be counted later. This repo does not publish an accuracy figure.
 
 ## Test checklist
 

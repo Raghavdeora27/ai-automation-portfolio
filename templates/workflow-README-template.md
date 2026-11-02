@@ -3,9 +3,9 @@
 Author note, delete after copying: point the standards link at `../../docs/engineering-standards.md`. The link below is correct for `templates/`.
 
 **Platform:** n8n, Make, or Zapier
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../docs/engineering-standards.md](../docs/engineering-standards.md)
 
@@ -51,6 +51,17 @@ flowchart TD
   retry -->|attempts exhausted| alert["Ops monitoring alert"]
   work -->|permanent failure| alert
 ```
+
+## Production shape
+
+Cover these where they fit the job. Leave out the ones that do not.
+
+- Multi-channel intake. Each channel is verified before a write.
+- An idempotency key, so a retry does not double-write.
+- Retries with backoff, then an alert to workflow 07.
+- Where a model is involved: an agent with named tools and a memory key. The model does not take the risky action itself.
+- A person approves risky actions.
+- An outcome log of what happened, so the result can be counted. Do not invent a metric.
 
 ## Error handling and edge cases
 

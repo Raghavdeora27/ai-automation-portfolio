@@ -1,9 +1,9 @@
 # 07 — Ops monitoring
 
 **Platform:** n8n
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -29,11 +29,12 @@ This is the error workflow for the rest of the catalog. Failures post to one Sla
 
 ## Trigger
 
-Three entry points.
+Four entry points. Each one is checked before a log row or a Slack message.
 
 1. **Error webhook.** Make scenarios, Zapier Zaps, and n8n workflows POST a normalized event. Header `X-Ops-Token` is required and is compared in constant time. A missing token returns HTTP 401 and writes no log row.
 2. **n8n Error Trigger.** Each of the other n8n workflows sets this workflow as its Error Workflow, so a crash that never reaches the HTTP node is still caught. The Error Trigger payload is mapped into the same shape as the webhook. Make and Zapier have no equivalent, so they use the webhook.
-3. **Schedule.** Weekdays at 09:00 in `digest_timezone`. The default timezone is `Asia/Kolkata`, which matches a Prayagraj working day. The client can change it.
+3. **Slack report.** A person can file an incident the catalog did not catch, with a Slack command. Slack signs that request. The signing secret stays in the Slack connection. A failed check writes nothing.
+4. **Schedule.** Weekdays at 09:00 in `digest_timezone`. The default timezone is `Asia/Kolkata`, which matches a Prayagraj working day. The client can change it.
 
 This workflow's own n8n Error Workflow setting stays empty, so a failure here cannot call itself.
 
@@ -79,6 +80,8 @@ Workflows also POST `kind: run` when a step finishes. Those rows feed the digest
 
 The idempotency key for an error event is `07-ops-monitoring:alert:{workflow}:{node}:{error_code}:{window_start}`. A repeat inside the window increments the count. It does not post a second Slack message. The log rows stay separate.
 
+There is no model in this workflow. The digest is a count of log rows, not a generated summary. The rows are the measurement: what ran, what failed, and what is waiting on a person. The sample digest is a format fixture, not a measurement.
+
 ## Architecture
 
 ```mermaid
@@ -94,6 +97,9 @@ flowchart TD
   dedupe -->|yes| count["Increment the count"]
   dedupe -->|no| slack["Post to Slack"]
   slack -->|Slack error| stay["Leave the execution failed"]
+  slackReport["Slack incident report"] --> slackVerify["Verify Slack signature"]
+  slackVerify -->|invalid| reject
+  slackVerify -->|valid| normalize
   schedule["Weekday schedule"] --> query["Read the last 24 hours of logs"]
   query --> digest["One Slack digest"]
 ```
