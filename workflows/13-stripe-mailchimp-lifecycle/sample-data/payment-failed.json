@@ -1,0 +1,23 @@
+{
+  "id": "evt_test_failed_0001",
+  "object": "event",
+  "api_version": "2024-06-20",
+  "created": 1760536802,
+  "livemode": false,
+  "type": "invoice.payment_failed",
+  "data": {
+    "object": {
+      "id": "in_test_0001",
+      "object": "invoice",
+      "customer": "cus_test_0001",
+      "customer_email": "buyer@example.com",
+      "customer_name": "Example Buyer",
+      "amount_due": 4900,
+      "currency": "usd",
+      "status": "open",
+      "attempt_count": 1,
+      "billing_reason": "subscription_cycle",
+      "hosted_invoice_url": "https://example.com/invoices/in_test_0001"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "note": "Fictional n8n Form submission for review. Not a client lead. Field names are illustrative, not a copy of the live form. This file is not a Gemini response.",
+  "submitted_at": "2026-10-15T09:30:00Z",
+  "form": {
+    "name": "Example Lead",
+    "email": "lead@example.com",
+    "company": "Example Studio",
+    "message": "We want to automate invoicing for a small studio. Can we talk this month?"
+  }
+}

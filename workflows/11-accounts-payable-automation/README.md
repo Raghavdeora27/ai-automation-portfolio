@@ -1,9 +1,9 @@
 # 11 — Accounts payable with human approval
 
 **Platform:** Make
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -29,7 +29,7 @@ A bill email is extracted with a fixed schema. A person approves it in Slack. Qu
 
 ## Trigger
 
-The Make Gmail module watches the accounts-payable mailbox. Access is the client's Gmail OAuth connection. There is no HMAC on a mailbox watch. A message is accepted only when a recipient is `ap_inbox_address`.
+Two intakes. The Make Gmail module watches the accounts-payable mailbox. Access is the client's Gmail OAuth connection. There is no HMAC on a mailbox watch. A message is accepted only when a recipient is `ap_inbox_address`. A vendor portal can POST the same PDF, or the same extracted body, to a webhook. That request carries `X-Bill-Token`, compared in constant time with credential `bill_webhook`. A missing token stops before extraction and before the ledger.
 
 One message with one PDF attachment starts a run. The idempotency key for the message is `11-accounts-payable-automation:email:{gmail_id}`, stored in the Make data store `processed_events`. The business key, checked in the ledger, is vendor display name plus invoice number.
 
@@ -41,7 +41,7 @@ The sample mailbox payload is [`sample-data/inbound-bill-email.json`](sample-dat
 
 1. Read the message. When there is no PDF, or there is more than one PDF, alert and stop. This version handles a single PDF.
 2. Insert the message key. A completed message id stops.
-3. Send the PDF text to OpenAI with the schema below. Temperature is 0. If the file has no text layer, the run alerts and stops. OCR is a later addition, not part of this spec.
+3. Send the PDF text to an OpenAI agent with the schema below. Temperature is 0. The only tool is `find_vendor`, a read-only lookup in the ledger by display name. If the tool returns two vendors, the run alerts and does not pick one. The agent cannot create or authorise a bill. If the file has no text layer, the run alerts and stops. OCR is a later addition, not part of this spec.
 4. Required fields: `vendor_name`, `invoice_number`, `invoice_date`, `currency`, `subtotal`, `tax_total`, `grand_total`, and a `confidence` from 0 to 1 on each required field. `vendor_tax_id` may be empty. Line items are included when the model can read them. A line the model cannot read is omitted. `grand_total` has to match the sum of the line rates plus `tax_total` within 1 currency unit. When it does not match, the run does not ask for approval and does not create a bill.
 5. When any required confidence is below `min_field_confidence` (default 0.8), post a Slack review message and stop before the ledger. The message key is completed with result `needs_review` so the same email is not extracted again. A person can start a manual bill.
 6. Search the ledger named in `ledger` by vendor display name and invoice number.
@@ -58,6 +58,7 @@ The sample mailbox payload is [`sample-data/inbound-bill-email.json`](sample-dat
    - Approve, QuickBooks: create the Bill, then record the user id.
    - Approve, Xero: set the draft to AUTHORISED, then record the user id.
 10. A second click finds the decision key completed and posts a reply in the thread that the decision is already recorded. It does not create or authorise the bill again.
+11. Write the outcome log row: message id, decision (`approved`, `rejected`, `needs_review`, or `duplicate`), and the bill id when one exists.
 
 ### Extraction schema
 
@@ -130,7 +131,7 @@ flowchart TD
 | QuickBooks or Xero returns 429 | Back off. A Xero draft id that was returned is stored before the Slack message is sent. |
 | Model output is invalid JSON | Retry up to 3 times, then alert. No draft and no approval message. |
 | `ledger` is neither `quickbooks` nor `xero` | Alert and stop. Do not guess the product. |
-| The run is asked to pay the bill | It does not. Approval creates or authorises the bill only. |
+| The run is asked to pay the bill | It does not. Approval creates or authorises the bill only. Payment stays a separate human step. |
 
 ## Integrations and credentials
 
@@ -144,6 +145,7 @@ Create these on the client's Gmail mailbox, OpenAI account, QuickBooks sandbox o
 | Xero | `xero_oauth` | Vendor search, draft bill, and authorise. Used when `ledger` is `xero`. Demo company. |
 | Slack | `slack_bot` | Review and approval messages. Signing secret on the same app. |
 | Make data store | `processed_events` | Message keys and decision keys. |
+| Vendor portal | `bill_webhook` | Shared secret for `X-Bill-Token` when the bill arrives by webhook. |
 | Ops monitoring | `ops_webhook` | Failure and run events to workflow 07. |
 
 ### Config
@@ -162,6 +164,10 @@ Create these on the client's Gmail mailbox, OpenAI account, QuickBooks sandbox o
 | `max_output_tokens` | Cap on the extraction call. | `1500` |
 
 Mock mode is `dry_run` true, using the pinned email and the hand-written extraction in `sample-data/`. Live mode is `dry_run` false against the QuickBooks sandbox company or the Xero demo company, after that credential is plugged in. Production companies are out of scope for the first build.
+
+## Outcome log
+
+Each bill writes one row: message id or portal id, decision (`approved`, `rejected`, `needs_review`, or `duplicate`), and the ledger bill id when one was created. That is how approvals and stopped duplicates can be counted later. This folder does not contain that count.
 
 ## Test checklist
 

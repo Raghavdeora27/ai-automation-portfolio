@@ -1,9 +1,9 @@
 # 04 — Stripe payment to QuickBooks invoice and Resend receipt
 
 **Platform:** n8n
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -19,7 +19,7 @@ Finance shouldn't have to retype every sale, and they definitely shouldn't do it
 
 **Who it's for:** businesses selling through Stripe and keeping books in QuickBooks Online.
 
-**Tools:** Stripe, QuickBooks Online, Resend, on n8n.
+**Tools:** Stripe, QuickBooks Online, Resend, Slack, on n8n.
 
 ## Business problem
 
@@ -29,7 +29,9 @@ One paid Checkout session produces one QuickBooks invoice and one Resend receipt
 
 ## Trigger
 
-Stripe sends `checkout.session.completed` to an n8n webhook.
+Stripe-format events arrive on a signed n8n webhook. The primary event is `checkout.session.completed`. The same endpoint also accepts `invoice.paid` for a one-time invoice, mapped onto the same fields (email, name, amount, currency, payment intent) before the idempotency key is inserted. Checkout is not the only door. A body that cannot fill those fields fails and alerts.
+
+This design is written for Stripe events, and it does not assume a live Stripe account is connected while it is being tested. Testing sends Stripe-format events to that signed webhook. Signature verification below is part of the design. That is the same approach as [workflow 13](../13-stripe-mailchimp-lifecycle/): Stripe-format payloads stand in until a real Stripe webhook can point at the endpoint. Workflow 13 tags a Mailchimp contact. This workflow creates the QuickBooks invoice and the receipt.
 
 The verifier reads `Stripe-Signature`, which carries a timestamp `t` and one or more `v1` signatures. The signed payload is `{t}.{raw body}`. The check is HMAC-SHA256 with the webhook signing secret, hex-encoded, compared in constant time to each `v1` value. A timestamp older than `stripe_tolerance_seconds` (default 300) is rejected. Re-serializing the JSON object changes the digest, so the verifier uses the raw body. A failed check returns HTTP 401 and writes nothing.
 
@@ -46,9 +48,10 @@ The sample body is [`sample-data/checkout-session-completed.json`](sample-data/c
 5. Require an email, a positive `amount_total`, a `payment_intent`, and a currency on `currency_allowlist`. The default allowlist is `usd`. If any of those are missing, mark the key `failed` and alert. The run does not invent an email or a currency.
 6. When `amount_tax` is greater than 0 and `qbo_tax_code_id` is unset, fail and alert. The workflow does not choose a tax rate. When `amount_tax` is 0, the invoice is created without a tax code.
 7. Find the QuickBooks customer by email in `qbo_realm_id`. Create the customer when it is missing. The display name is `customer_details.name` when that field is present, otherwise the email.
-8. QuickBooks `DocNumber` holds at most 21 characters. Build `short_ref` from the first 21 characters of the payment intent id. Query invoices with that `DocNumber`. When one exists and its `PrivateNote` equals the full payment intent id, store that invoice id and skip create. When one exists and the `PrivateNote` is different, fail and alert. Otherwise create the invoice using `qbo_item_id` and the description in `metadata.item_description`, set `DocNumber` to `short_ref`, and set `PrivateNote` to the full payment intent id. Then record a payment whose `PrivateNote` is the same id. Stripe's fee stays off the customer invoice.
-9. Insert a second key, `04-stripe-quickbooks-invoicing:payment:{payment_intent}:receipt`. Send one Resend email to the customer email with the name, amount, currency, payment intent id, and the QuickBooks document number. Include a link only when QuickBooks returned one. Then mark the receipt key `completed`.
-10. Mark the invoice key `completed` and store the QuickBooks invoice id in `result_ref`.
+8. When `approval_amount` is set and `amount_total` is above it, post the customer, amount, and currency to Slack and wait. A rejection creates no invoice and no receipt, and the key is completed with outcome `rejected`. Approval continues. When `approval_amount` is unset, this gate does not run and the workflow does not invent a cutoff. A missing tax code still fails closed, whether or not the amount is high.
+9. QuickBooks `DocNumber` holds at most 21 characters. Build `short_ref` from the first 21 characters of the payment intent id. Query invoices with that `DocNumber`. When one exists and its `PrivateNote` equals the full payment intent id, store that invoice id and skip create. When one exists and the `PrivateNote` is different, fail and alert. Otherwise create the invoice using `qbo_item_id` and the description in `metadata.item_description`, set `DocNumber` to `short_ref`, and set `PrivateNote` to the full payment intent id. Then record a payment whose `PrivateNote` is the same id. Stripe's fee stays off the customer invoice.
+10. Insert a second key, `04-stripe-quickbooks-invoicing:payment:{payment_intent}:receipt`. Send one Resend email to the customer email with the name, amount, currency, payment intent id, and the QuickBooks document number. Include a link only when QuickBooks returned one. Then mark the receipt key `completed`.
+11. Mark the invoice key `completed` and store the QuickBooks invoice id in `result_ref`. Write the outcome log row for this payment.
 
 The fixture is 100.00 USD (`10000` cents) with no tax. That arithmetic describes the fixture. It is not a client invoice.
 
@@ -56,13 +59,17 @@ The fixture is 100.00 USD (`10000` cents) with no tax. That arithmetic describes
 
 ```mermaid
 flowchart TD
-  stripe["Stripe checkout.session.completed"] --> verify["Verify Stripe-Signature on raw body"]
+  stripe["Stripe-format checkout or invoice.paid"] --> verify["Verify Stripe-Signature on raw body"]
   verify -->|invalid| reject["Return 401 and stop"]
   verify -->|valid| dedupe["Insert invoice idempotency key"]
   dedupe -->|already completed| ack["Return 200 and stop"]
   dedupe -->|new or resumable| ack2["Return 200"]
   ack2 --> customer["Match or create QuickBooks customer"]
-  customer --> invoice["Create invoice and record payment"]
+  customer --> gate{"Above approval_amount"}
+  gate -->|yes| person["Slack approval"]
+  person -->|rejected| stopApproval["No invoice and no receipt"]
+  person -->|approved| invoice["Create invoice and record payment"]
+  gate -->|no or unset| invoice
   invoice --> receipt["Send receipt through Resend"]
   receipt --> doneNode["Mark invoice and receipt keys completed"]
   customer -->|transient error| retry["Retry with backoff"]
@@ -84,7 +91,8 @@ flowchart TD
 | `amount_tax` is greater than 0 and `qbo_tax_code_id` is unset | Fail and alert. Do not guess a rate. |
 | QuickBooks already has an invoice whose `DocNumber` is `short_ref` and whose `PrivateNote` is this payment intent | Store that invoice id, skip create, and continue to the receipt step if the receipt key is not completed. |
 | The session reports a refund amount greater than 0 | Fail and alert so a person can decide. The run does not invoice a payment that is already partly refunded. |
-| QuickBooks or Resend returns 429 or 5xx | Retry with backoff, then alert. The idempotency row stays `failed` until a later run completes the step. |
+| QuickBooks or Resend returns 429 or 5xx | Retry with backoff, then alert workflow 07. The idempotency row stays `failed` until a later run completes the step. |
+| Amount is above `approval_amount` | Wait for Slack. A rejection creates no invoice and no receipt. |
 | Two QuickBooks customers share the email | Alert with both ids and do not pick one. |
 
 ## Integrations and credentials
@@ -96,6 +104,7 @@ Create these on the client's test-mode Stripe account, QuickBooks sandbox compan
 | Stripe | `stripe_webhook` | Webhook signing secret for `Stripe-Signature`. Test-mode secret while `dry_run` is on. |
 | QuickBooks Online | `quickbooks_oauth` | Customers, invoices, and payments in the sandbox company. |
 | Resend | `resend_api` | Receipt email. |
+| Slack | `slack_bot` | Approval when the amount is above `approval_amount`. |
 | Supabase | `supabase_service_role` | `processed_events` and `workflow_logs`. |
 | Ops monitoring | `ops_webhook` | `X-Ops-Token` and the workflow 07 URL. |
 
@@ -110,9 +119,15 @@ Create these on the client's test-mode Stripe account, QuickBooks sandbox compan
 | `currency_allowlist` | Currencies the run will invoice. | `usd` |
 | `stripe_tolerance_seconds` | Maximum age of the Stripe signature timestamp. | `300` |
 | `from_address` | Verified Resend sender. | Client domain |
+| `approval_amount` | Smallest-currency-unit amount that waits for a person before the invoice is created. | Unset, which does not add an approval gate |
+| `approval_channel` | Slack channel id for that approval. | Client channel |
 | `idempotency_stale_minutes` | When an `in_progress` row may be resumed. | `15` |
 
 Mock mode is `dry_run` true, using the pinned file in `sample-data/`. Live mode is `dry_run` false against the Stripe test-mode webhook and the QuickBooks sandbox company, after those credentials are plugged in. Production keys are out of scope for the first build.
+
+## Outcome log
+
+Each run writes one row: payment intent id, outcome (`invoiced`, `duplicate_skipped`, `rejected`, `failed`), QuickBooks invoice id when one exists, and whether the receipt was sent. That is how invoices issued from payments can be counted later. This folder does not contain that count.
 
 ## Test checklist
 

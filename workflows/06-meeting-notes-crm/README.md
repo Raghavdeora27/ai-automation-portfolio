@@ -1,9 +1,9 @@
 # 06 — Meeting notes to CRM
 
 **Platform:** n8n
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -19,7 +19,7 @@ The useful bits of a call get lost in the transcript, and the follow-up everyone
 
 **Who it's for:** sales and account teams on Zoho CRM who record their calls.
 
-**Tools:** OpenAI, Zoho CRM, on n8n.
+**Tools:** OpenAI, Zoho CRM, Slack, on n8n.
 
 ## Business problem
 
@@ -29,7 +29,7 @@ A finished transcript becomes a short CRM note and one Zoho CRM task per action 
 
 ## Trigger
 
-A webhook from the client's transcription tool, or a file drop that posts the same body. The client chooses the tool (for example Zoom, Google Meet with a transcription add-on, or a dedicated transcription app). This workflow starts when the transcript is ready. It does not join the call.
+Zoom, Google Meet (with a transcription add-on), or a dedicated transcription app. Each one posts the same body when the transcript is ready. This workflow does not join the call. A file drop that posts that same body is accepted too. Every intake is verified before the model runs.
 
 Header `X-Transcript-Token` is required and is compared in constant time with credential `transcript_webhook`. A missing token returns HTTP 401 and does not call the model. The transcript is untrusted. Text inside it is not a workflow instruction.
 
@@ -41,7 +41,7 @@ The sample is [`sample-data/call-transcript.json`](sample-data/call-transcript.j
 
 1. Verify the token. Require `meeting_id`, `started_at`, at least one internal attendee email, and a non-empty `transcript`.
 2. Insert the meeting key. A completed meeting id stops. A `failed` key, or an `in_progress` key older than `idempotency_stale_minutes`, resumes.
-3. Call OpenAI with structured output. The transcript is user content. Temperature is 0. The schema:
+3. Call OpenAI as an agent with structured output. The transcript is user content. Temperature is 0. Tools are `search_crm` (read-only match on attendee email) and the transcript itself. Memory is the last note already stored on that external contact, fetched read-only, so the summary may mention it only when that note exists. The agent does not email anyone. The schema:
 
 ```json
 {
@@ -66,9 +66,9 @@ Rules for the model, checked again in the workflow:
 - `due_date` is ISO-8601 and only when the transcript states a date. Resolve a weekday against `started_at`. When the phrase is ambiguous, leave `due_date` empty.
 
 4. Drop any action item whose `owner_email` is not in the attendee list, and clear a `due_date` that does not parse. Alert if a field was dropped, and still write the valid items. A response that is not valid JSON is retried up to 3 times and then alerts, with nothing written.
-5. Match Zoho CRM Contacts and Leads by each external attendee email. Write one note on each matched record with the summary and the decisions. When no record matches, alert with the emails and the action items, and create no task. Do not create a lead from a meeting by default. `create_lead_if_missing` can be turned on later. The default is false.
+5. Match Zoho CRM Contacts and Leads by each external attendee email. Write one note on each matched record with the summary and the decisions. When no record matches, alert with the emails and the action items, and create no task. Do not create a lead from a meeting by default. `create_lead_if_missing` can be turned on later. The default is false. If that flag is true, the new lead waits for Slack approval before it is created. Sending any email to an external attendee also waits for Slack approval. The default is that no such email is sent.
 6. Create one Zoho CRM task per remaining action item, related to the matched contact. When `owner_email` is an internal attendee, assign the Zoho user in `internal_user_map`. When `owner_email` is empty or is not a Zoho user, assign `default_owner_id` and prefix the subject with `Owner missing`. When `due_date` is empty, leave the Zoho due date empty.
-7. Store the Zoho task ids on the meeting key and mark it completed.
+7. Store the Zoho task ids on the meeting key, write the outcome log row, and mark it completed.
 
 The fictional transcript asks Example Buyer to send the GST invoice sample by Friday, and asks the internal host to check Razorpay webhooks with no date. `started_at` is Wednesday 2026-10-14, so Friday is 2026-10-16. The second task has no due date. The last line tells the model to invent a task for every attendee due tomorrow. That line is specified to be dropped. Those are the specified outputs for the fixture. A model has not been run on it here.
 
@@ -102,6 +102,7 @@ flowchart TD
 | Zoho accepts the first task and fails on the second | Resume from the tasks not yet stored on the meeting key. |
 | An attendee email matches two CRM records | Write the note on the Contact, and include both ids in an alert. |
 | No CRM record matches | Alert with the summary and the action items. Create no lead and no task while `create_lead_if_missing` is false. |
+| `create_lead_if_missing` is true, or a step would email the customer | Slack approval first. A rejection writes the note only when a record already exists, and sends no email. |
 | Transcript longer than `max_transcript_chars` | Alert and stop. Do not truncate in silence. The default cap is 40,000 characters. |
 | No action items | Write the CRM note and create no tasks. |
 | Logs | Store the meeting id and the task ids. Do not store the transcript body or the webhook token. |
@@ -116,6 +117,7 @@ Create these on the client's Zoho CRM sandbox. Plug them into the names below. T
 | OpenAI | `openai_api` | Summary and action items. |
 | Zoho CRM | `zoho_crm_oauth` | Contact and lead search, notes, and tasks. |
 | Supabase | `supabase_service_role` | Meeting keys and logs. |
+| Slack | `slack_bot` | Approval before a new lead or any external email. |
 | Ops monitoring | `ops_webhook` | `X-Ops-Token` and the workflow 07 URL. |
 
 ### Config
@@ -133,6 +135,10 @@ Create these on the client's Zoho CRM sandbox. Plug them into the names below. T
 | `idempotency_stale_minutes` | When an `in_progress` row may be resumed. | `15` |
 
 Mock mode is `dry_run` true, using the pinned transcript in `sample-data/`. Live mode is `dry_run` false against the client's Zoho CRM sandbox, after `zoho_crm_oauth` is plugged in. Production credentials are out of scope for the first build.
+
+## Outcome log
+
+Each meeting writes one row: `meeting_id`, notes written, tasks created, tasks dropped, and whether a person was asked to approve a lead or an email. That is how follow-ups captured from calls can be counted later. This folder does not contain that count.
 
 ## Test checklist
 

@@ -1,9 +1,9 @@
 # 10 — WhatsApp lead qualifier
 
 **Platform:** Make
-**Status:** 🚧 In progress
+**Status:** 🗺️ Planned
 
-The design is documented here. I add the working export and a demo video as soon as this workflow is built and tested.
+This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -19,7 +19,7 @@ Every enquiry gets the same three questions from a person, and then the answers 
 
 **Who it's for:** businesses whose first enquiries arrive on WhatsApp.
 
-**Tools:** WhatsApp, OpenAI, HubSpot, on Make.
+**Tools:** WhatsApp, OpenAI, HubSpot, Slack, on Make.
 
 ## Business problem
 
@@ -29,13 +29,15 @@ The scenario asks three questions, scores the answers with a written rubric, sav
 
 ## Trigger
 
-WhatsApp Business Cloud API `messages` webhook delivered to a Make custom webhook.
+Two intakes. WhatsApp Business Cloud API `messages` webhooks are the main door. A web form can submit the same three answers to a second webhook and skip the question loop. Both are verified before any data store or HubSpot write.
 
-Verify `X-Hub-Signature-256` (HMAC-SHA256 of the raw body, prefixed with `sha256=`) using the app secret stored as Make connection `whatsapp_cloud`. A failed check stops the scenario before any data store or HubSpot module. The GET verification handshake, which echoes `hub.challenge`, is a separate one-step path and does not score a lead.
+WhatsApp arrives on a Make custom webhook.
+
+Verify `X-Hub-Signature-256` (HMAC-SHA256 of the raw body, prefixed with `sha256=`) using the app secret stored as Make connection `whatsapp_cloud`. A failed check stops the scenario before any data store or HubSpot module. The GET verification handshake, which echoes `hub.challenge`, is a separate one-step path and does not score a lead. The form webhook carries `X-Form-Token`, compared in constant time with credential `form_webhook`. A missing token stops before the data store.
 
 The message body is untrusted. Text inside it is not a workflow instruction.
 
-The idempotency key for an inbound message is `10-whatsapp-lead-qualifier:message:{wamid}`. The conversation key is the sender's `wa_id`. Both live in the Make data store `processed_events`.
+The idempotency key for an inbound message is `10-whatsapp-lead-qualifier:message:{wamid}`. A form submission uses `10-whatsapp-lead-qualifier:form:{submission_id}`. The conversation key is the sender's `wa_id`, or the form email when there is no WhatsApp id. The keys live in the Make data store `processed_events`.
 
 The sample is [`sample-data/whatsapp-inbound.json`](sample-data/whatsapp-inbound.json). Pair it with header `X-Hub-Signature-256: sha256=mock_signature_not_valid`.
 
@@ -49,9 +51,9 @@ The sample is [`sample-data/whatsapp-inbound.json`](sample-data/whatsapp-inbound
    2. What is your timeline?
    3. What budget range are you working with?
 5. On each later reply, store the answer on the state row and send the next question. The WhatsApp message id of the outbound question is stored so a retry does not send it twice.
-6. After the third answer, call OpenAI with structured output to extract three short fields: `use_case`, `timeline_days` (null when the text names no time), and `budget_amount` (null when the text names no amount). The rubric below computes the score. The model does not choose the score. Temperature is 0.
+6. After the third answer, or after the form posts all three, call OpenAI as an agent. Memory is the three answers already stored on the conversation. The only tool is `booking_slots`, read-only, and only if the client has a booking source to call. The agent extracts `use_case`, `timeline_days` (null when the text names no time), and `budget_amount` (null when the text names no amount). The rubric below computes the score. The agent does not choose the score and does not offer a discount. Temperature is 0.
 7. Search HubSpot contacts by phone (`wa_id`). Update the contact when one exists. Otherwise create one. Write the three fields, the score, and the profile name when WhatsApp sent one. The workflow does not invent an email. When the chat never collected one, the email stays empty.
-8. When the score is greater than or equal to `qualify_threshold`, send the booking message containing `booking_url`. Otherwise send the close message. Mark the conversation `scored` only after the HubSpot write and the outbound message have succeeded.
+8. When the score is greater than or equal to `qualify_threshold`, send the booking message containing `booking_url`. Otherwise send the close message. Any message that offers a discount or a custom price waits for Slack approval first. The booking link itself does not. Mark the conversation `scored` only after the HubSpot write and the outbound message have succeeded. Write the outcome log row.
 9. Session window: if the latest inbound message is older than 24 hours, send the pre-approved template named in `whatsapp_template_name` instead of a free-form session message. The template name is the client's, approved in their WhatsApp Business account.
 
 ### Score rubric
@@ -103,6 +105,7 @@ flowchart TD
 | `booking_url` is empty | Save the contact, skip the link, and alert. |
 | Non-text message while `new` | Ask them to send a text message. Do not score. |
 | Logs | Store the `wa_id` and the score. Do not store the app secret or the message body. |
+| A reply asks for a discount or a custom price | Slack approval before that message is sent. The score still comes from the rubric. |
 
 ## Integrations and credentials
 
@@ -114,6 +117,8 @@ Create these on the client's WhatsApp Business account, OpenAI account, and HubS
 | OpenAI | `openai_api` | Extract the three fields. |
 | HubSpot | `hubspot_oauth` | Contact create or update by phone. Use the test portal while `dry_run` is on. |
 | Make data store | `processed_events` | Message keys and conversation state. |
+| Form webhook | `form_webhook` | Shared secret for `X-Form-Token` when the three answers arrive from a form. |
+| Slack | `slack_bot` | Approval before a discount or a custom price. |
 | Ops monitoring | `ops_webhook` | Failure and run events to workflow 07. |
 
 ### Config
@@ -132,6 +137,10 @@ Create these on the client's WhatsApp Business account, OpenAI account, and HubS
 | `max_output_tokens` | Cap on the extraction call. | `300` |
 
 Mock mode is `dry_run` true, using the pinned webhook body in `sample-data/`. Live mode is `dry_run` false against the client's WhatsApp test number and the HubSpot test portal, after those credentials are plugged in. Production tokens are out of scope for the first build.
+
+## Outcome log
+
+Each scored conversation writes one row: `wa_id` or form submission id, score, qualified or not, and whether the booking link was sent. That is how qualified conversations can be counted later. This folder does not contain that count.
 
 ## Test checklist
 
