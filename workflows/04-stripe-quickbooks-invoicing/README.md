@@ -1,6 +1,7 @@
 # 04 — Stripe payment to QuickBooks invoice and Resend receipt
 
 **Platform:** n8n
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,23 @@ Finance shouldn't have to retype every sale, and they definitely shouldn't do it
 **Who it's for:** businesses selling through Stripe and keeping books in QuickBooks Online.
 
 **Tools:** Stripe, QuickBooks Online, Resend, Slack, on n8n.
+
+## Where this is used
+
+This is the Stripe and QuickBooks version of the Razorpay → Zoho Books invoicing that runs at JobRays. A scenario: a SaaS or online course business that takes card payments on Stripe gets an invoice and receipt for every sale, and nobody retypes anything.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Verify the Stripe signature | Webhook security |
+| 2 | Store an idempotency key on the Stripe id | Idempotency, dedupe |
+| 3 | Match or create the QuickBooks customer | QuickBooks Online API |
+| 4 | Create the invoice and record the payment | Accounting automation |
+| 5 | Send one receipt through Resend | Transactional email |
+| 6 | Retry, then alert ops monitoring on failure | Error handling |
 
 ## Business problem
 

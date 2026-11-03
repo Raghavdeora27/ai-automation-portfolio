@@ -1,6 +1,7 @@
 # 10 — WhatsApp lead qualifier
 
 **Platform:** Make
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,22 @@ Every enquiry gets the same three questions from a person, and then the answers 
 **Who it's for:** businesses whose first enquiries arrive on WhatsApp.
 
 **Tools:** WhatsApp, OpenAI, HubSpot, Slack, on Make.
+
+## Where this is used
+
+A scenario: a local service business, such as an interior designer or a tutoring centre, whose enquiries arrive on WhatsApp. Each enquiry is asked the same three questions straight away, qualified leads get the booking link, and every chat is saved in HubSpot.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Receive the WhatsApp message and verify the request | WhatsApp Business Cloud API, webhook security |
+| 2 | Ask three questions: need, timing, budget | Conversation state |
+| 3 | Score the answers with a written rubric | AI scoring, structured output |
+| 4 | Save every completed conversation to HubSpot | HubSpot upsert, dedupe |
+| 5 | Send the booking link only above the threshold, and alert sales in Slack | Routing rules |
 
 ## Business problem
 

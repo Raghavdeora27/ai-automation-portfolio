@@ -1,0 +1,1411 @@
+{
+  "name": "OA-02 Research & Draft",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Research & draft (every 30 min)\nTakes up to **10** prospects with status `new`, one at a time:\n1. Re-reads the row and locks it as `researching` (idempotent: a row is only processed if it is still `new`)\n2. Fetches the website (15 s timeout, 3 retries, continue on fail) and strips it to text (6000 chars)\n3. **AI Agent (Gemini)** checks fit, checks prior messages to the same domain via a **Google Sheets tool**, writes the email; Structured Output Parser enforces the JSON\n4. Code re-scores the draft against the style rules; below MIN_QUALITY gets **one** regenerate\n5. Saves the draft to **Messages**, sets `drafted` / `disqualified` / `research_failed`, logs to **Events**",
+        "height": 330,
+        "width": 760,
+        "color": 4
+      },
+      "id": "166b3ab2-0956-89b3-2153-db9af9572a10",
+      "name": "Note: Research & draft (every 30 min)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Style rules live in the Agent system prompt\nEdit **AI Research & Draft Agent → Options → System Message** to change tone. `Score & Check Draft` enforces word count, paragraphs, no lists/labels/buzzwords, video offer and signature in code, so a weak draft is caught even if the model rates itself highly.",
+        "height": 230,
+        "width": 620,
+        "color": 6
+      },
+      "id": "7f8010eb-cdc8-bacf-e531-a3f24a791108",
+      "name": "Note: Style rules live in the Agent system prompt",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        -480
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "133dc6d0-3fa2-5b4b-16cc-cc3b3775e7d5",
+      "name": "Every 30 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa4b1531-3478-7007-9ec0-37913fca2399",
+              "name": "SHEET_ID",
+              "value": "YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "a539063e-4ac9-3c65-1177-7cd1f8e73f3f",
+              "name": "SENDER_NAME",
+              "value": "Raghav",
+              "type": "string"
+            },
+            {
+              "id": "730721de-9996-416e-6a0f-e91f20f39f14",
+              "name": "SENDER_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "f383965c-2915-5191-66c7-de99120b89ee",
+              "name": "APPROVER_EMAIL",
+              "value": "approver@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "812cdcf7-7558-89f2-549f-c25e19cc61ea",
+              "name": "ALERT_EMAIL",
+              "value": "alerts@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "7360d641-ffc4-fdb8-6599-c8a924007693",
+              "name": "DAILY_CAP",
+              "value": 30,
+              "type": "number"
+            },
+            {
+              "id": "79eba11d-9ec0-5905-96a9-177318767719",
+              "name": "DEFAULT_TIMEZONE",
+              "value": "Asia/Kolkata",
+              "type": "string"
+            },
+            {
+              "id": "5558d350-d95a-0643-ab8a-ba1c709330ec",
+              "name": "SEND_WINDOW_START_HOUR",
+              "value": 9,
+              "type": "number"
+            },
+            {
+              "id": "abb02274-4e26-1ee0-2228-b218212a6cb9",
+              "name": "SEND_WINDOW_END_HOUR",
+              "value": 17,
+              "type": "number"
+            },
+            {
+              "id": "e5323302-00d0-ca13-a6b9-f37f1321ebc6",
+              "name": "IGNORE_SEND_WINDOW",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "64fb83b0-1393-6460-7093-4d95374d6659",
+              "name": "FOLLOWUP_1_DELAY_BUSINESS_DAYS",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "3d7ad95c-40b0-5560-becf-24cd5427308c",
+              "name": "FOLLOWUP_2_DELAY_BUSINESS_DAYS",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "c667b6ff-1151-a67e-33cc-9fda79a21f4e",
+              "name": "TEST_FOLLOWUP_DELAY_MINUTES",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "5ad98d79-18e7-21f6-ad5f-f8e534cffa47",
+              "name": "MY_SERVICE_ONE_LINER",
+              "value": "I build small automations that take repetitive admin (follow-ups, bookings, data entry) off a business owner's plate.",
+              "type": "string"
+            },
+            {
+              "id": "f353c1ea-bc77-2fe4-58bf-1915e2c9ac42",
+              "name": "BATCH_SIZE",
+              "value": 10,
+              "type": "number"
+            },
+            {
+              "id": "7ba175c1-3a29-d3fe-8765-d570678cc187",
+              "name": "MIN_QUALITY",
+              "value": 7,
+              "type": "number"
+            },
+            {
+              "id": "445020b4-adb6-2dcb-48e2-207a2da0e1fa",
+              "name": "MAX_SITE_CHARS",
+              "value": 6000,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7eb9d5d9-9190-9fd1-f71a-5d1a204a8a90",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "new"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "67945a63-9703-19ea-b463-a85c909eafdb",
+      "name": "Read New Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "id": "c2b3e4c8-e9a7-d7d4-adc0-8bc00c025459",
+      "name": "Take Batch of 10",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "a59c7245-ba5c-ff41-9a78-2e176249f71b",
+      "name": "Loop Prospects",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "3c4cf053-30b9-0fe2-2dfa-0dbe7caaacd4",
+      "name": "Batch Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Loop Prospects').first(1).json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "a7904eef-dec8-9d2f-593c-b9f2da8ae28b",
+      "name": "Re-read Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1100,
+        40
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7d4f226a-478e-907b-dcb8-37a76ab7fa80",
+              "leftValue": "={{ Boolean($json.status === 'new') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "7d4f226a-478e-907b-dcb8-37a76ab7fa80",
+      "name": "Still new?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1320,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { prospect_id: $json.prospect_id, status: 'researching', updated_at: new Date().toISOString() } }];"
+      },
+      "id": "aeac6444-e43d-a5a4-e5c1-dee0b3268c53",
+      "name": "Shape: Lock Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "cd4582be-77fd-31d1-d833-3c85f939144f",
+      "name": "Lock as researching",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1760,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Re-read Prospect').first().json.website }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; OutreachResearchBot/1.0)"
+            },
+            {
+              "name": "Accept",
+              "value": "text/html,application/xhtml+xml"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "redirect": {
+            "redirect": {
+              "maxRedirects": 5
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "html"
+            }
+          }
+        }
+      },
+      "id": "dca12beb-1bb3-d50d-e38b-216521a1a86f",
+      "name": "Fetch Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('Re-read Prospect').first().json;\nconst CFG = $('Config').first().json;\nconst r = $input.first().json || {};\nlet html = typeof r.html === 'string' ? r.html : (typeof r.data === 'string' ? r.data : '');\nconst fetchError = r.error ? (r.error.message || JSON.stringify(r.error)).slice(0, 300) : '';\nconst title = (html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i) || [,''])[1].trim();\nconst meta = (html.match(/<meta[^>]+name=[\"']description[\"'][^>]+content=[\"']([^\"']*)/i) || [,''])[1];\nlet text = html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ').replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n  .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, ' ').replace(/<svg[\\s\\S]*?<\\/svg>/gi, ' ')\n  .replace(/<!--[\\s\\S]*?-->/g, ' ')\n  .replace(/<\\/(p|div|h[1-6]|li|section|article|br|tr)>/gi, '\\n').replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&rsquo;/g, \"'\").replace(/&quot;/g, '\"').replace(/&[a-z#0-9]+;/gi, ' ')\n  .replace(/[{}]/g, ' ')            // braces would break LangChain prompt templates\n  .replace(/[ \\t]+/g, ' ').replace(/\\n\\s*\\n+/g, '\\n').trim();\nconst max = Number(CFG.MAX_SITE_CHARS || 6000);\nconst site_text = [title && `Title: ${title}`, meta && `Description: ${meta}`, text].filter(Boolean).join('\\n').replace(/[{}]/g, ' ').slice(0, max);\nconst clean = (s) => String(s ?? '').replace(/[{}]/g, ' ');\nreturn [{ json: {\n  prospect_id: p.prospect_id, first_name: clean(p.first_name), company: clean(p.company), domain: clean(p.domain),\n  website: clean(p.website), notes: clean(p.notes).slice(0, 500), email: p.email,\n  site_text, site_ok: site_text.length >= 200, fetch_error: fetchError || (site_text.length < 200 ? 'site returned too little text' : '') } }];"
+      },
+      "id": "c1a5ea5e-ac60-f293-55b1-a67d51bd10d6",
+      "name": "Extract Site Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "2264f6ab-2d33-5057-1114-7d829a218f65",
+              "leftValue": "={{ Boolean($json.site_ok) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "2264f6ab-2d33-5057-1114-7d829a218f65",
+      "name": "Site Text OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Prospect\nFirst name: {{ $json.first_name }}\nCompany: {{ $json.company }}\nCompany domain: {{ $json.domain }}\nWebsite: {{ $json.website }}\nNotes from my CRM: {{ $json.notes }}\n\nWebsite text (cleaned, truncated to 6000 characters):\n{{ $json.site_text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are the research and copywriting assistant for {{ $('Config').first().json.SENDER_NAME }}, a freelance automation builder. What they offer: {{ $('Config').first().json.MY_SERVICE_ONE_LINER }}\n\nSTEP 1 - prior contact: call the prior_messages tool once with the prospect's company domain. If earlier messages exist, do not reuse their angle or subject, and do not mention them.\n\nSTEP 2 - fit: fit is true only for a real, operating small or mid-sized business whose website suggests manual, repetitive work that automation could reduce (enquiries, bookings, quotes, orders, onboarding, follow-ups, reporting). fit is false for parked, placeholder or example domains, sites with almost no real content, large enterprises, government bodies, and businesses that themselves sell automation. If fit is false still return every field, using short placeholder text for subject and body.\n\nSTEP 3 - the email, plain text only:\n- 80 to 120 words in about 3 short paragraphs separated by blank lines, then a sign-off.\n- Open with Hi and the first name.\n- Exactly one specific observation taken from the website text: a named service, page, booking or enquiry flow, or a phrase they use. No generic praise.\n- Link that observation to one concrete way an automation could save them time.\n- Close with a soft, low-pressure offer to send a 2-minute video showing the idea. Do not ask for a call and do not include links.\n- No bullet points, no numbered lists, no headings or labels, no emojis, no exclamation marks.\n- Never use buzzwords such as synergy, leverage, cutting-edge, game-changer, revolutionize, streamline, AI-powered, seamless, unlock, elevate, robust, innovative.\n- Final two lines: Best, then {{ $('Config').first().json.SENDER_NAME }}\n- Never invent facts that are not in the website text or notes.\n\nSubject: 2 to 6 plain words, no clickbait, no emojis.\nquality_score: an honest 1 to 10 rating of how specific, natural and rule-compliant the email is.",
+          "maxIterations": 6
+        }
+      },
+      "id": "f18a0c44-2f83-0291-6a38-0812c54f76f6",
+      "name": "AI Research & Draft Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2680,
+        -100
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "id": "7eb40eb1-820c-9ccc-4d22-893b9bce4763",
+      "name": "Gemini (Draft)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2560,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fit\": {\n      \"type\": \"boolean\",\n      \"description\": \"true if this business is a plausible client for small automation work\"\n    },\n    \"fit_reason\": {\n      \"type\": \"string\",\n      \"description\": \"one sentence explaining the fit decision\"\n    },\n    \"specific_observation\": {\n      \"type\": \"string\",\n      \"description\": \"the one concrete detail from their website used in the email\"\n    },\n    \"subject\": {\n      \"type\": \"string\",\n      \"description\": \"2-6 word plain subject line\"\n    },\n    \"body\": {\n      \"type\": \"string\",\n      \"description\": \"plain-text email body, 80-120 words, paragraphs separated by blank lines, signed with the sender name\"\n    },\n    \"quality_score\": {\n      \"type\": \"integer\",\n      \"minimum\": 1,\n      \"maximum\": 10,\n      \"description\": \"honest self-rating of specificity and naturalness\"\n    }\n  },\n  \"required\": [\n    \"fit\",\n    \"fit_reason\",\n    \"specific_observation\",\n    \"subject\",\n    \"body\",\n    \"quality_score\"\n  ]\n}"
+      },
+      "id": "64648dc8-dac9-508b-4192-1388742418c2",
+      "name": "Parse Draft JSON",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2880,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Look up messages we have already sent or drafted to a company. Input: the company domain, e.g. example.com. Returns earlier rows from the Messages tab (subject, body, status, created_at). Empty result means no prior contact.",
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "domain",
+              "lookupValue": "={{ $fromAI('domain', 'company domain to look up, e.g. example.com', 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9f3cb200-83c1-de0e-300a-fe8162eccd57",
+      "name": "prior_messages",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        2720,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const x = $('Extract Site Text').first().json;\nconst err = $input.first().json.error;\nconst reason = x.site_ok ? ('AI step failed: ' + String((err && (err.message || err)) || 'unknown').slice(0, 300)) : ('website fetch failed: ' + x.fetch_error);\nreturn [{ json: { outcome: 'research_failed', fit_reason: reason, observation: '', subject: '', body: '', quality_score: 0, regenerated: false, issues: [] } }];"
+      },
+      "id": "aab9be74-7f7c-1363-5c9d-9af54d2a313d",
+      "name": "Research Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2900,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const BUZZ = ['synergy','leverage','cutting-edge','cutting edge','game-changer','game changer','revolutionize','revolutionise','streamline','ai-powered','seamless','unlock','elevate','robust','innovative','best-in-class','disrupt','supercharge','next-level','paradigm','empower','10x'];\nfunction checkDraft(d, senderName) {\n  const body = String(d.body || '').trim();\n  const words = body.split(/\\s+/).filter(Boolean).length;\n  const paras = body.split(/\\n\\s*\\n/).filter(p => p.trim()).length;\n  const issues = [];\n  if (words < 80 || words > 120) issues.push(`word count ${words} (needs 80-120)`);\n  if (paras < 3 || paras > 5) issues.push(`${paras} paragraphs (aim for about 3 short ones plus sign-off)`);\n  if (/^\\s*([-*\\u2022]|\\d+[.)])\\s+/m.test(body)) issues.push('contains a list');\n  if (/^\\s*[A-Z][A-Za-z ]{2,20}:\\s/m.test(body) && !/^\\s*(Hi|Hello|Hey)\\b/m.test(body.split('\\n')[0] || '')) issues.push('contains a label like \"Observation:\"');\n  const low = body.toLowerCase();\n  const buzz = BUZZ.filter(b => low.includes(b));\n  if (buzz.length) issues.push('buzzwords: ' + buzz.join(', '));\n  if (!/video/i.test(body)) issues.push('missing the soft 2-minute video offer');\n  if (senderName && !body.trim().endsWith(senderName)) issues.push(`must end with the signature \"${senderName}\"`);\n  if (/!/.test(body)) issues.push('uses exclamation marks');\n  if (!String(d.subject || '').trim()) issues.push('empty subject');\n  let score = Math.max(1, Math.min(10, Math.round(Number(d.quality_score) || 0)));\n  score = Math.max(1, score - Math.min(4, issues.length * 2));\n  return { score, issues, words };\n}\n\nfunction parseLLM(j) {\n  let o = j && j.output !== undefined ? j.output : j;\n  if (o && typeof o.text === 'string' && o.output === undefined && Object.keys(o).length === 1) o = o.text;\n  if (typeof o === 'string') {\n    const m = o.match(/\\{[\\s\\S]*\\}/);\n    try { o = JSON.parse(m ? m[0] : o); } catch (e) { o = { _raw: o }; }\n  }\n  if (o && o.output && typeof o.output === 'object') o = o.output;\n  return o || {};\n}\n\nconst CFG = $('Config').first().json;\nconst o = parseLLM($input.first().json);\nconst fit = o.fit === true || String(o.fit).toLowerCase() === 'true';\nconst chk = checkDraft(o, CFG.SENDER_NAME);\nconst min = Number(CFG.MIN_QUALITY || 7);\nreturn [{ json: {\n  outcome: fit ? 'drafted' : 'disqualified', fit, fit_reason: String(o.fit_reason || '').slice(0, 500),\n  observation: String(o.specific_observation || '').slice(0, 500), subject: String(o.subject || '').trim(), body: String(o.body || '').trim(),\n  model_score: Number(o.quality_score) || 0, quality_score: chk.score, issues: chk.issues, words: chk.words,\n  needs_regen: fit && chk.score < min, regenerated: false } }];"
+      },
+      "id": "54081fce-9b8c-5fd9-46e9-6ba04b5c41b2",
+      "name": "Score & Check Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2980,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "69f45e9f-92b8-33b7-4b14-887a520ca2a9",
+              "leftValue": "={{ Boolean($json.needs_regen) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "69f45e9f-92b8-33b7-4b14-887a520ca2a9",
+      "name": "Below MIN_QUALITY?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3200,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Rewrite this cold email so it follows every rule below. Keep the same specific observation unless it is weak.\n\nProblems found in the first draft: {{ $json.issues.join('; ') || 'reads as generic' }}\n\nFirst draft subject: {{ $json.subject.replace(/[{}]/g, ' ') }}\nFirst draft body:\n{{ $json.body.replace(/[{}]/g, ' ') }}\n\nProspect first name: {{ $('Extract Site Text').first().json.first_name }} | Company: {{ $('Extract Site Text').first().json.company }}\nSpecific observation: {{ $json.observation.replace(/[{}]/g, ' ') }}\n\nRules: 80 to 120 words; about 3 short paragraphs separated by blank lines; open with Hi and the first name; exactly one specific observation; one concrete time-saving idea; a soft offer to send a 2-minute video, no call request, no links; no lists, no labels, no emojis, no exclamation marks; no buzzwords; last two lines are Best, and {{ $('Config').first().json.SENDER_NAME }}. Subject 2 to 6 plain words. Set fit to true, keep fit_reason and specific_observation, and give an honest quality_score.",
+        "hasOutputParser": true
+      },
+      "id": "e7dc72c4-f6ab-e6a2-4baf-b0638a3f6b55",
+      "name": "AI Regenerate Draft",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        3440,
+        -240
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "id": "b571fa01-4dbc-5017-08bb-5976a4930fab",
+      "name": "Gemini (Regenerate)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3400,
+        -40
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"fit\": {\n      \"type\": \"boolean\",\n      \"description\": \"true if this business is a plausible client for small automation work\"\n    },\n    \"fit_reason\": {\n      \"type\": \"string\",\n      \"description\": \"one sentence explaining the fit decision\"\n    },\n    \"specific_observation\": {\n      \"type\": \"string\",\n      \"description\": \"the one concrete detail from their website used in the email\"\n    },\n    \"subject\": {\n      \"type\": \"string\",\n      \"description\": \"2-6 word plain subject line\"\n    },\n    \"body\": {\n      \"type\": \"string\",\n      \"description\": \"plain-text email body, 80-120 words, paragraphs separated by blank lines, signed with the sender name\"\n    },\n    \"quality_score\": {\n      \"type\": \"integer\",\n      \"minimum\": 1,\n      \"maximum\": 10,\n      \"description\": \"honest self-rating of specificity and naturalness\"\n    }\n  },\n  \"required\": [\n    \"fit\",\n    \"fit_reason\",\n    \"specific_observation\",\n    \"subject\",\n    \"body\",\n    \"quality_score\"\n  ]\n}"
+      },
+      "id": "8d218b5b-b60b-0093-6b23-21cade759aa6",
+      "name": "Parse Regenerated JSON",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        3580,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const BUZZ = ['synergy','leverage','cutting-edge','cutting edge','game-changer','game changer','revolutionize','revolutionise','streamline','ai-powered','seamless','unlock','elevate','robust','innovative','best-in-class','disrupt','supercharge','next-level','paradigm','empower','10x'];\nfunction checkDraft(d, senderName) {\n  const body = String(d.body || '').trim();\n  const words = body.split(/\\s+/).filter(Boolean).length;\n  const paras = body.split(/\\n\\s*\\n/).filter(p => p.trim()).length;\n  const issues = [];\n  if (words < 80 || words > 120) issues.push(`word count ${words} (needs 80-120)`);\n  if (paras < 3 || paras > 5) issues.push(`${paras} paragraphs (aim for about 3 short ones plus sign-off)`);\n  if (/^\\s*([-*\\u2022]|\\d+[.)])\\s+/m.test(body)) issues.push('contains a list');\n  if (/^\\s*[A-Z][A-Za-z ]{2,20}:\\s/m.test(body) && !/^\\s*(Hi|Hello|Hey)\\b/m.test(body.split('\\n')[0] || '')) issues.push('contains a label like \"Observation:\"');\n  const low = body.toLowerCase();\n  const buzz = BUZZ.filter(b => low.includes(b));\n  if (buzz.length) issues.push('buzzwords: ' + buzz.join(', '));\n  if (!/video/i.test(body)) issues.push('missing the soft 2-minute video offer');\n  if (senderName && !body.trim().endsWith(senderName)) issues.push(`must end with the signature \"${senderName}\"`);\n  if (/!/.test(body)) issues.push('uses exclamation marks');\n  if (!String(d.subject || '').trim()) issues.push('empty subject');\n  let score = Math.max(1, Math.min(10, Math.round(Number(d.quality_score) || 0)));\n  score = Math.max(1, score - Math.min(4, issues.length * 2));\n  return { score, issues, words };\n}\n\nfunction parseLLM(j) {\n  let o = j && j.output !== undefined ? j.output : j;\n  if (o && typeof o.text === 'string' && o.output === undefined && Object.keys(o).length === 1) o = o.text;\n  if (typeof o === 'string') {\n    const m = o.match(/\\{[\\s\\S]*\\}/);\n    try { o = JSON.parse(m ? m[0] : o); } catch (e) { o = { _raw: o }; }\n  }\n  if (o && o.output && typeof o.output === 'object') o = o.output;\n  return o || {};\n}\n\nconst CFG = $('Config').first().json;\nconst first = $('Score & Check Draft').first().json;\nconst o = parseLLM($input.first().json);\nconst chk = checkDraft(o, CFG.SENDER_NAME);\nconst second = { ...first, subject: String(o.subject || '').trim(), body: String(o.body || '').trim(),\n  observation: String(o.specific_observation || first.observation), model_score: Number(o.quality_score) || 0,\n  quality_score: chk.score, issues: chk.issues, words: chk.words };\nconst best = (o.body && second.quality_score >= first.quality_score) ? second : first;\nreturn [{ json: { ...best, outcome: 'drafted', regenerated: true } }];"
+      },
+      "id": "975df384-fd8e-0345-6927-583f551a49ad",
+      "name": "Pick Best Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3720,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { ...$('Score & Check Draft').first().json, outcome: 'drafted', regenerated: true, issues: [...$('Score & Check Draft').first().json.issues, 'regenerate failed'] } }];"
+      },
+      "id": "f70e481a-381e-9563-454e-b7efae87c590",
+      "name": "Keep First Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3720,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: { ...j, prospect_id: $('Loop Prospects').first(1).json.prospect_id } }];"
+      },
+      "id": "ab35825b-eb06-a6e2-87eb-3f1e8cb52d9b",
+      "name": "Finalize Outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3960,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Finalize Outcome').first().json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "a4ac147d-e330-6568-6ec1-12aae792cc31",
+      "name": "Re-read Before Save",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4180,
+        0
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "698ff0de-6bf0-b04a-1320-bb37a71de438",
+              "leftValue": "={{ Boolean($json.status === 'researching') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "698ff0de-6bf0-b04a-1320-bb37a71de438",
+      "name": "Lock Still Held?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b6a2159b-2b10-5338-7b5f-366af1ad73a0",
+              "leftValue": "={{ Boolean($('Finalize Outcome').first().json.outcome === 'drafted') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b6a2159b-2b10-5338-7b5f-366af1ad73a0",
+      "name": "Is Drafted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4620,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $('Finalize Outcome').first().json;\nconst p = $('Re-read Before Save').first().json;\nconst now = new Date().toISOString();\nreturn [{ json: { message_key: `${p.prospect_id}-initial-${Date.now()}`, prospect_id: p.prospect_id, email: p.email, domain: p.domain,\n  kind: 'initial', subject: f.subject, body: f.body, quality_score: f.quality_score, status: 'draft',\n  thread_id: '', gmail_message_id: '', created_at: now, sent_at: '' } }];"
+      },
+      "id": "1b18f5a5-0358-5a8b-202a-6102ee76a635",
+      "name": "Shape: Draft Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4840,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "cb2bfc86-8ef0-63e6-6cbe-00b4d39d1fba",
+      "name": "Save Draft to Messages",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        5060,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $('Finalize Outcome').first().json;\nconst now = new Date().toISOString();\nconst detail = f.outcome === 'drafted'\n  ? `score ${f.quality_score}/10 (model ${f.model_score}), ${f.words} words${f.regenerated ? ', regenerated once' : ''}${f.issues && f.issues.length ? '; issues: ' + f.issues.join('; ') : ''}`\n  : f.fit_reason;\nreturn [{ json: { prospect_id: f.prospect_id, status: f.outcome, fit_reason: f.fit_reason, observation: f.observation,\n  updated_at: now, _event: f.outcome, _detail: detail } }];"
+      },
+      "id": "4d7f9a7d-ac38-cefa-62ce-d4afef368369",
+      "name": "Shape: Prospect Outcome",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5280,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "37a0c204-3dea-926b-d26b-53987947cd42",
+      "name": "Update Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        5500,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: {\n  timestamp: new Date().toISOString(), prospect_id: i.json.prospect_id || '', workflow: 'OA-02-research-draft',\n  event: i.json._event || 'updated', detail: String(i.json._detail || '').slice(0, 900) } }));"
+      },
+      "id": "400351c4-b254-ade8-aeb4-a90a643f4926",
+      "name": "Build Event Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "83f397ac-c307-f2e5-3b98-44916d8eea31",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        5940,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Every 30 min": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Read New Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read New Prospects": {
+      "main": [
+        [
+          {
+            "node": "Take Batch of 10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Take Batch of 10": {
+      "main": [
+        [
+          {
+            "node": "Loop Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Prospects": {
+      "main": [
+        [
+          {
+            "node": "Batch Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Re-read Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Prospect": {
+      "main": [
+        [
+          {
+            "node": "Still new?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still new?": {
+      "main": [
+        [
+          {
+            "node": "Shape: Lock Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Lock Row": {
+      "main": [
+        [
+          {
+            "node": "Lock as researching",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lock as researching": {
+      "main": [
+        [
+          {
+            "node": "Fetch Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Website": {
+      "main": [
+        [
+          {
+            "node": "Extract Site Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Site Text": {
+      "main": [
+        [
+          {
+            "node": "Site Text OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini (Draft)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Research & Draft Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Draft JSON": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Research & Draft Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prior_messages": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Research & Draft Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Site Text OK?": {
+      "main": [
+        [
+          {
+            "node": "AI Research & Draft Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Research Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Research & Draft Agent": {
+      "main": [
+        [
+          {
+            "node": "Score & Check Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Research Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score & Check Draft": {
+      "main": [
+        [
+          {
+            "node": "Below MIN_QUALITY?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini (Regenerate)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Regenerate Draft",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Regenerated JSON": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Regenerate Draft",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Below MIN_QUALITY?": {
+      "main": [
+        [
+          {
+            "node": "AI Regenerate Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Finalize Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Regenerate Draft": {
+      "main": [
+        [
+          {
+            "node": "Pick Best Draft",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keep First Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Best Draft": {
+      "main": [
+        [
+          {
+            "node": "Finalize Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep First Draft": {
+      "main": [
+        [
+          {
+            "node": "Finalize Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Failed": {
+      "main": [
+        [
+          {
+            "node": "Finalize Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Outcome": {
+      "main": [
+        [
+          {
+            "node": "Re-read Before Save",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Before Save": {
+      "main": [
+        [
+          {
+            "node": "Lock Still Held?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lock Still Held?": {
+      "main": [
+        [
+          {
+            "node": "Is Drafted?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Drafted?": {
+      "main": [
+        [
+          {
+            "node": "Shape: Draft Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Prospect Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Draft Message": {
+      "main": [
+        [
+          {
+            "node": "Save Draft to Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Draft to Messages": {
+      "main": [
+        [
+          {
+            "node": "Shape: Prospect Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Prospect": {
+      "main": [
+        [
+          {
+            "node": "Build Event Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event Row": {
+      "main": [
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Event": {
+      "main": [
+        [
+          {
+            "node": "Loop Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Prospect Outcome": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REPLACE_WITH_OA99_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

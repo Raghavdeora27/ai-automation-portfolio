@@ -1,6 +1,7 @@
 # 14 — Content repurposing
 
 **Platform:** Zapier
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,22 @@ Rewriting every article for LinkedIn and X takes hours, and auto-posting unrevie
 **Who it's for:** founders and marketers who publish on their own site.
 
 **Tools:** OpenAI, Notion, Slack, on Zapier.
+
+## Where this is used
+
+A scenario: a founder or consultant who writes articles on their own site. Each new article becomes a LinkedIn draft and an X post for them to approve in Slack, so they keep posting without spending hours rewriting.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Receive a blog URL on your own domain | Allowlist check |
+| 2 | Fetch the article and write a LinkedIn draft and an X draft | AI writing, prompt design |
+| 3 | Save both as a Notion page | Notion API |
+| 4 | Ask for approve, edit or reject in Slack | Human-in-the-loop |
+| 5 | Dedupe on the URL, and alert on failure | Idempotency, error handling |
 
 ## Business problem
 

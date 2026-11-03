@@ -1,0 +1,1703 @@
+{
+  "name": "OA-05 Inbox Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Inbox agent (polls Gmail every minute)\nUnread INBOX mail → matched to a prospect by **thread_id** or **sender email** (bounces: by the address inside the bounce). Non-prospect mail is ignored and **left unread**.\n\nGemini classifier (structured output) returns category, summary, suggested_reply, return_date, then a Switch routes:\n- **interested / question / objection** → status `replied`, approver gets the suggested reply (send / edit / don't send) → reply in thread → `in_conversation`\n- **not_now** → `snoozed`, recontact_at +75 days\n- **unsubscribe** → Suppression + `unsubscribed`, never replies\n- **out_of_office** → next_followup_at = return date + 1 day (status kept)\n- **bounce** (classifier or mailer-daemon) → `bounced` + Suppression\n- **other** → `replied` for you to read\n\nEvery handled email is marked read and logged to Events.",
+        "height": 520,
+        "width": 800,
+        "color": 4
+      },
+      "id": "8498897a-6aab-6452-11d0-8dcb218a0869",
+      "name": "Note: Inbox agent (polls Gmail every minute)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -720
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Approval pauses the batch\nSend-and-Wait pauses this execution until you answer, so other replies that arrived in the **same minute** wait too. Answer approvals promptly (or switch the reply step to Gmail **Create Draft** if you prefer to review in Gmail).",
+        "height": 220,
+        "width": 520,
+        "color": 3
+      },
+      "id": "c3a50fe9-c019-4f34-e99c-be017ff3cd80",
+      "name": "Note: Approval pauses the batch",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2900,
+        -720
+      ]
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "id": "76d6d952-5eea-e26e-c02a-fa943ad42405",
+      "name": "Gmail Trigger: Unread Inbox",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa4b1531-3478-7007-9ec0-37913fca2399",
+              "name": "SHEET_ID",
+              "value": "YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "a539063e-4ac9-3c65-1177-7cd1f8e73f3f",
+              "name": "SENDER_NAME",
+              "value": "Raghav",
+              "type": "string"
+            },
+            {
+              "id": "730721de-9996-416e-6a0f-e91f20f39f14",
+              "name": "SENDER_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "f383965c-2915-5191-66c7-de99120b89ee",
+              "name": "APPROVER_EMAIL",
+              "value": "approver@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "812cdcf7-7558-89f2-549f-c25e19cc61ea",
+              "name": "ALERT_EMAIL",
+              "value": "alerts@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "7360d641-ffc4-fdb8-6599-c8a924007693",
+              "name": "DAILY_CAP",
+              "value": 30,
+              "type": "number"
+            },
+            {
+              "id": "79eba11d-9ec0-5905-96a9-177318767719",
+              "name": "DEFAULT_TIMEZONE",
+              "value": "Asia/Kolkata",
+              "type": "string"
+            },
+            {
+              "id": "5558d350-d95a-0643-ab8a-ba1c709330ec",
+              "name": "SEND_WINDOW_START_HOUR",
+              "value": 9,
+              "type": "number"
+            },
+            {
+              "id": "abb02274-4e26-1ee0-2228-b218212a6cb9",
+              "name": "SEND_WINDOW_END_HOUR",
+              "value": 17,
+              "type": "number"
+            },
+            {
+              "id": "e5323302-00d0-ca13-a6b9-f37f1321ebc6",
+              "name": "IGNORE_SEND_WINDOW",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "64fb83b0-1393-6460-7093-4d95374d6659",
+              "name": "FOLLOWUP_1_DELAY_BUSINESS_DAYS",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "3d7ad95c-40b0-5560-becf-24cd5427308c",
+              "name": "FOLLOWUP_2_DELAY_BUSINESS_DAYS",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "c667b6ff-1151-a67e-33cc-9fda79a21f4e",
+              "name": "TEST_FOLLOWUP_DELAY_MINUTES",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "5ad98d79-18e7-21f6-ad5f-f8e534cffa47",
+              "name": "MY_SERVICE_ONE_LINER",
+              "value": "I build small automations that take repetitive admin (follow-ups, bookings, data entry) off a business owner's plate.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0b05949a-27a1-4547-20c4-0287067f4b70",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "97ae8e4b-ed14-b4f0-e44c-dcf410f34520",
+      "name": "Load Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst prospects = rowsOf('Load Prospects').filter(r => r.prospect_id);\nconst byEmail = new Map(prospects.map(p => [lc(p.email), p]));\nconst byThread = new Map(prospects.filter(p => p.thread_id).map(p => [String(p.thread_id), p]));\nconst me = lc(CFG.SENDER_EMAIL);\nconst out = [];\nfor (const item of $('Gmail Trigger: Unread Inbox').all()) {\n  const m = item.json;\n  const fromAddr = lc((m.from && m.from.value && m.from.value[0] && m.from.value[0].address) || String(m.From || m.from || '').replace(/.*</, '').replace(/>.*/, ''));\n  const subject = String(m.subject || m.Subject || '');\n  const text = String(m.text || m.snippet || '').slice(0, 8000);\n  if (!fromAddr || fromAddr === me) continue;\n  const isBounce = /mailer-daemon|postmaster/.test(fromAddr) || /(delivery status notification|undeliverable|mail delivery failed|returned mail|delivery failure|address not found)/i.test(subject);\n  let p = byThread.get(String(m.threadId)) || byEmail.get(fromAddr);\n  if (!p && isBounce) p = prospects.find(x => x.email && text.toLowerCase().includes(lc(x.email)));\n  if (!p) continue;                       // not a prospect: leave the email alone (stays unread)\n  if (['unsubscribed', 'bounced'].includes(p.status)) continue;\n  // drop quoted history so the classifier only sees the new reply\n  const fresh = text.split(/\\n(?:On .{5,200}wrote:|-{2,} ?Original Message|From: .+\\nSent: )/i)[0].replace(/^>.*$/gm, '').trim();\n  out.push({ json: { prospect_id: p.prospect_id, status_at_match: p.status, email: p.email, domain: p.domain,\n    first_name: safe(p.first_name), company: safe(p.company), timezone: p.timezone,\n    gmail_id: m.id, thread_id: m.threadId, from: fromAddr, subject: safe(subject).slice(0, 300),\n    reply_text: safe(fresh || text).slice(0, 4000), is_bounce: isBounce } });\n}\nreturn out;"
+      },
+      "id": "bd4c9dbd-40bd-e077-31e1-3af9a7d85e9f",
+      "name": "Match to Prospect",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "df6b8ad3-2c5e-a8a5-f791-2d065e7b257c",
+      "name": "Loop Replies",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "05150bbd-8842-ab6c-f6c4-ebfe40d4d921",
+      "name": "Replies Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Loop Replies').first(1).json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "a45f094c-587c-2201-41d9-a1abd108a0b6",
+      "name": "Re-read Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1100,
+        40
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "dfa150fe-8ae4-e952-84af-c4280f7c41b2",
+                    "leftValue": "={{ Boolean($('Loop Replies').first(1).json.is_bounce) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "mailer_daemon_bounce"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d2c681f2-3679-0e39-7317-3d587d924148",
+                    "leftValue": "={{ Boolean(!$('Loop Replies').first(1).json.is_bounce && !!$json.prospect_id && ![\"unsubscribed\",\"bounced\"].includes($json.status)) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "classify"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "72a369d2-2a41-b00c-61f7-d952db5eb776",
+                    "leftValue": "={{ Boolean(!$('Loop Replies').first(1).json.is_bounce && !($json.prospect_id && ![\"unsubscribed\",\"bounced\"].includes($json.status))) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "stop"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "452914d8-192c-757b-284f-78a66f3fc187",
+      "name": "Bounce or Reply?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1320,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify this email reply to a cold outreach message from {{ $('Config').first().json.SENDER_NAME }}, who builds small business automations and offered to send a 2-minute video.\n\nFrom: {{ $('Loop Replies').first(1).json.from }}\nSubject: {{ $('Loop Replies').first(1).json.subject }}\nProspect first name: {{ $('Loop Replies').first(1).json.first_name }} | Company: {{ $('Loop Replies').first(1).json.company }}\n\nReply text:\n{{ $('Loop Replies').first(1).json.reply_text }}\n\nCategories: interested (wants the video, a call or more info), question (asks something specific), objection (pushback on price, need, timing with reasons, or trust), not_now (polite not right now or later this year), unsubscribe (asks to stop, remove, not interested at all), out_of_office (automatic absence reply), bounce (delivery failure notice), other (anything else).\nsummary: one sentence.\nsuggested_reply: only for interested, question or objection. Plain text, 40 to 90 words, warm and direct, answers what they said, no lists, no links, no buzzwords, starts with Hi and the first name, ends with Best, and {{ $('Config').first().json.SENDER_NAME }} on separate lines. Never promise prices, dates or results. Otherwise an empty string.\nreturn_date: for out_of_office the date they are back as YYYY-MM-DD if stated (today is {{ $now.toISODate() }}), otherwise an empty string.",
+        "hasOutputParser": true
+      },
+      "id": "b0863a54-fb45-87e5-9d81-b6ac97eb498c",
+      "name": "AI Classify Reply",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1580,
+        -60
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "70ff942f-3e82-153e-c9a4-97c88a5c2338",
+      "name": "Gemini (Classifier)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"category\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"interested\",\n        \"question\",\n        \"objection\",\n        \"not_now\",\n        \"unsubscribe\",\n        \"out_of_office\",\n        \"bounce\",\n        \"other\"\n      ]\n    },\n    \"summary\": {\n      \"type\": \"string\",\n      \"description\": \"one sentence summary of the reply\"\n    },\n    \"suggested_reply\": {\n      \"type\": \"string\",\n      \"description\": \"plain-text reply for interested, question or objection; empty string otherwise\"\n    },\n    \"return_date\": {\n      \"type\": \"string\",\n      \"description\": \"YYYY-MM-DD the person is back, only for out_of_office, else empty string\"\n    }\n  },\n  \"required\": [\n    \"category\",\n    \"summary\",\n    \"suggested_reply\",\n    \"return_date\"\n  ]\n}"
+      },
+      "id": "817ce2af-5c5d-40cb-b693-3c8f5a729baa",
+      "name": "Parse Classification JSON",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        1720,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseLLM(j) {\n  let o = j && j.output !== undefined ? j.output : j;\n  if (o && typeof o.text === 'string' && o.output === undefined && Object.keys(o).length === 1) o = o.text;\n  if (typeof o === 'string') {\n    const m = o.match(/\\{[\\s\\S]*\\}/);\n    try { o = JSON.parse(m ? m[0] : o); } catch (e) { o = { _raw: o }; }\n  }\n  if (o && o.output && typeof o.output === 'object') o = o.output;\n  return o || {};\n}\n\nconst m = $('Loop Replies').first(1).json;\nlet o = {};\ntry { o = parseLLM($input.first().json); } catch (e) { o = {}; }\nconst cats = ['interested','question','objection','not_now','unsubscribe','out_of_office','bounce','other'];\nlet category = cats.includes(o.category) ? o.category : 'other';\nif ($input.first().json.error) category = 'other';\nif (/^\\s*(unsubscribe|stop|remove me)\\b/i.test(m.reply_text)) category = 'unsubscribe';   // hard safety net\nreturn [{ json: { ...m, category, summary: String(o.summary || ($input.first().json.error ? 'classifier failed - please read manually' : '')).slice(0, 400),\n  suggested_reply: String(o.suggested_reply || '').trim(), return_date: String(o.return_date || '').trim() } }];"
+      },
+      "id": "db5fdc07-d202-0dde-5056-6dfb7c50c8c0",
+      "name": "Normalise Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $('Loop Replies').first(1).json;\nreturn [{ json: { ...m, category: 'bounce', summary: 'delivery failure (mailer-daemon)', suggested_reply: '', return_date: '' } }];"
+      },
+      "id": "79d7104f-3946-c2ab-2b09-b0b9ced29a1b",
+      "name": "Bounce Item",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1860,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "markAsRead",
+        "messageId": "={{ $json.gmail_id }}"
+      },
+      "id": "9190192f-8ffc-ff77-196e-32f986cc49de",
+      "name": "Mark Email Read",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2080,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gmail markAsRead returns only {id,labelIds}; restore the classified item\nconst fromNorm = $('Normalise Classification').isExecuted ? $('Normalise Classification').last().json : null;\nconst fromBounce = $('Bounce Item').isExecuted ? $('Bounce Item').last().json : null;\nconst pick = [fromNorm, fromBounce].filter(Boolean).find(x => x.prospect_id === $('Loop Replies').first(1).json.prospect_id && x.gmail_id === $('Loop Replies').first(1).json.gmail_id);\nreturn [{ json: pick || fromNorm || fromBounce }];"
+      },
+      "id": "050f19ce-e411-3839-a924-d8a701409063",
+      "name": "Classified",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ed703b0e-7665-5943-8820-78adda009f69",
+                    "leftValue": "={{ Boolean(['interested','question','objection'].includes($json.category)) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "needs_reply"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a25f9253-24ce-e3a1-ef5e-b23c10625e9f",
+                    "leftValue": "={{ Boolean($json.category === 'not_now') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "not_now"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9c8e30bc-b47a-13bd-f80f-59e1e127cc2e",
+                    "leftValue": "={{ Boolean($json.category === 'unsubscribe') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "unsubscribe"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b244e48a-4368-0950-19fa-60da698a58b5",
+                    "leftValue": "={{ Boolean($json.category === 'out_of_office') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "out_of_office"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a1c5286f-f69d-73c7-5bc9-2bca125c6636",
+                    "leftValue": "={{ Boolean($json.category === 'bounce') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bounce"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "749f5caa-ac3b-3897-fa98-fa3337c1f46f",
+                    "leftValue": "={{ Boolean($json.category === 'other') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "other"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "96847052-e48b-7d91-4f41-1486d4cd85e0",
+      "name": "Route by Category",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2520,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $json;\nreturn [{ json: { prospect_id: c.prospect_id, status: 'replied', reply_category: c.category, next_followup_at: '', updated_at: new Date().toISOString() } }];"
+      },
+      "id": "d6a8fff2-136e-ff25-1f0d-047e245c8679",
+      "name": "Shape: replied",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "981b2cf6-638e-367c-0790-7d34f6ac1c4f",
+      "name": "Set replied (stop follow-ups)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3000,
+        -360
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $('Classified').first().json;\nreturn [{ json: { timestamp: new Date().toISOString(), prospect_id: c.prospect_id, workflow: 'OA-05-inbox-agent', event: 'reply_received', detail: `${c.category}: ${c.summary}`.slice(0, 900) } }];"
+      },
+      "id": "5443e717-d693-a70a-2c86-99c232662331",
+      "name": "Shape: reply_received Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3220,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "96470be2-d551-b9d6-5797-dd89ed29a0ce",
+      "name": "Log reply_received",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3440,
+        -360
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWait",
+        "sendTo": "={{ $('Config').first().json.APPROVER_EMAIL }}",
+        "subject": "=Reply ready for {{ $('Classified').first().json.first_name }} ({{ $('Classified').first().json.company }}) - {{ $('Classified').first().json.category }}",
+        "message": "={{ (() => { const c = $('Classified').first().json; const e = (x) => String(x ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); return '<p><b>' + e(c.category) + '</b> from ' + e(c.from) + '<br>' + e(c.summary) + '</p><p><b>Their message:</b><br>' + e(c.reply_text).slice(0, 2500).replace(/\\n/g, '<br>') + '</p><hr><p><b>Suggested reply:</b><br>' + e(c.suggested_reply || '(none - write your own in the form)').replace(/\\n/g, '<br>') + '</p>'; })() }}",
+        "responseType": "customForm",
+        "defineForm": "fields",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Decision",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Send suggested reply"
+                  },
+                  {
+                    "option": "Send my edited reply below"
+                  },
+                  {
+                    "option": "Don't send - I'll handle it"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Edited reply",
+              "fieldType": "textarea",
+              "placeholder": "Full reply text if you chose to edit"
+            }
+          ]
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "limitType": "afterTimeInterval",
+              "resumeAmount": 24,
+              "resumeUnit": "hours"
+            }
+          },
+          "appendAttribution": false,
+          "messageButtonLabel": "Review & decide",
+          "responseFormTitle": "Reply approval",
+          "responseFormDescription": "The reply is sent in the same Gmail thread, only from the sender mailbox."
+        }
+      },
+      "id": "a8a6713b-6dab-a143-e7c8-2aa4f1f5bdb4",
+      "name": "Approve Reply (Gmail Send & Wait)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3660,
+        -360
+      ],
+      "webhookId": "a8a6713b-6dab-a143-e7c8-2aa4f1f5bdb4",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "function formValue(data, label) {\n  if (!data) return '';\n  const want = label.toLowerCase();\n  for (const [k, v] of Object.entries(data)) if (k.toLowerCase() === want) return v;\n  return '';\n}\n\nconst d = $input.first().json.data;\nconst c = $('Classified').first().json;\nlet send = false, body = c.suggested_reply;\nif (d) {\n  const choice = String(formValue(d, 'Decision')).toLowerCase();\n  if (choice.startsWith('send my')) { const eb = String(formValue(d, 'Edited reply') || '').trim(); if (eb) body = eb; send = !!body; }\n  else if (choice.startsWith('send')) send = !!body;\n}\nreturn [{ json: { send, body, decided: !!d, prospect_id: c.prospect_id } }];"
+      },
+      "id": "d7af175d-0d56-4815-12f7-b5d7d40d03bb",
+      "name": "Parse Reply Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3880,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Parse Reply Decision').first().json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "35507c21-133a-3ca7-caee-135d1b55fcef",
+      "name": "Re-read Before Reply",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4100,
+        -360
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a2fb2a5b-9d83-ef05-9815-e48f8b7689e8",
+              "leftValue": "={{ Boolean($('Parse Reply Decision').first().json.send && ['replied','in_conversation'].includes($json.status)) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "a2fb2a5b-9d83-ef05-9815-e48f8b7689e8",
+      "name": "Send Reply?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4320,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "reply",
+        "messageId": "={{ $('Classified').first().json.gmail_id }}",
+        "emailType": "text",
+        "message": "={{ $('Parse Reply Decision').first().json.body }}",
+        "options": {
+          "replyToSenderOnly": true,
+          "appendAttribution": false,
+          "senderName": "={{ $('Config').first().json.SENDER_NAME }}"
+        }
+      },
+      "id": "37fc0384-5282-f372-5c80-5b8a08b4a78e",
+      "name": "Reply in Thread (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        4540,
+        -440
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $('Classified').first().json;\nconst r = $input.first().json;\nconst now = new Date().toISOString();\nreturn [{ json: { message_key: `${c.prospect_id}-reply-${Date.now()}`, prospect_id: c.prospect_id, email: c.email, domain: c.domain, kind: 'reply',\n  subject: 'Re: ' + c.subject, body: $('Parse Reply Decision').first().json.body, quality_score: '', status: 'sent',\n  thread_id: r.threadId || c.thread_id, gmail_message_id: r.id || '', created_at: now, sent_at: now } }];"
+      },
+      "id": "d6f20aec-da73-c13c-d4f7-bfdc31ad5bad",
+      "name": "Shape: Reply Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4760,
+        -500
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "89b31bec-d350-1969-87bc-e482d961b5a5",
+      "name": "Save Reply to Messages",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4980,
+        -500
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $('Classified').first().json;\nconst r = $('Reply in Thread (Gmail)').first().json;\nreturn [{ json: { prospect_id: c.prospect_id, status: 'in_conversation', last_message_id: r.id || '', updated_at: new Date().toISOString(),\n  _event: 'reply_sent', _detail: `answered ${c.category} in thread ${c.thread_id}` } }];"
+      },
+      "id": "4b312c0f-292a-6013-bcb3-fbc799ffa159",
+      "name": "Shape: in_conversation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5200,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $('Classified').first().json; const e = $input.first().json.error;\nreturn [{ json: { prospect_id: c.prospect_id, updated_at: new Date().toISOString(), _event: 'reply_failed', _detail: String((e && (e.message || e)) || '').slice(0, 400) + ' - reply manually from Gmail' } }];"
+      },
+      "id": "db8c7116-0e31-dc05-de66-d76b13e4258f",
+      "name": "Shape: Reply Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4760,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Reply Decision').first().json;\nreturn [{ json: { prospect_id: d.prospect_id, updated_at: new Date().toISOString(), _event: 'reply_not_sent',\n  _detail: d.decided ? 'approver chose to handle it manually' : 'no decision within 24h - reply manually' } }];"
+      },
+      "id": "13459559-5a33-ec26-6b2c-7bb5884d96b0",
+      "name": "Shape: Reply Not Sent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4540,
+        -220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst c = $json;\nreturn [{ json: { prospect_id: c.prospect_id, status: 'snoozed', reply_category: c.category, next_followup_at: '',\n  recontact_at: DateTime.utc().plus({ days: 75 }).toISO(), updated_at: nowIso(), _event: 'snoozed', _detail: c.summary } }];"
+      },
+      "id": "1f909bfd-0775-5f80-617d-ceae45d08c4e",
+      "name": "Shape: snoozed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $json; const now = new Date().toISOString();\nreturn [{ json: { prospect_id: c.prospect_id, email: c.email, domain: c.domain, reason: 'unsubscribe', added_at: now,\n  status: 'unsubscribed', reply_category: c.category, next_followup_at: '', updated_at: now, _event: 'unsubscribed', _detail: c.summary } }];"
+      },
+      "id": "4e01bf89-35d5-4800-b53e-9d914ede27b2",
+      "name": "Shape: unsubscribe",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        20
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst c = $json;\nlet back = c.return_date ? DateTime.fromISO(c.return_date, { zone: zoneFor(c.timezone) }) : null;\nlet next;\nif (back && back.isValid && back > DateTime.now().minus({ days: 1 })) next = back.plus({ days: 1 }).set({ hour: 10, minute: 0 }).toUTC().toISO();\nelse next = addBusinessDays(DateTime.now().setZone(zoneFor(c.timezone)), 5).toUTC().toISO();\nreturn [{ json: { prospect_id: c.prospect_id, reply_category: c.category, next_followup_at: next, updated_at: nowIso(),\n  _event: 'out_of_office', _detail: `back ${c.return_date || 'unknown (+5 business days)'}; follow-up moved to ${next}` } }];"
+      },
+      "id": "2875e239-9b85-52a9-3e87-ac302a93cc22",
+      "name": "Shape: out_of_office",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $json; const now = new Date().toISOString();\nreturn [{ json: { prospect_id: c.prospect_id, email: c.email, domain: c.domain, reason: 'bounce', added_at: now,\n  status: 'bounced', reply_category: 'bounce', next_followup_at: '', updated_at: now, _event: 'bounced', _detail: c.summary } }];"
+      },
+      "id": "bf5dee88-472f-4878-8369-c5655b334365",
+      "name": "Shape: bounce",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = $json;\nreturn [{ json: { prospect_id: c.prospect_id, status: 'replied', reply_category: c.category, next_followup_at: '', updated_at: new Date().toISOString(),\n  _event: 'reply_received', _detail: `other: ${c.summary}` } }];"
+      },
+      "id": "2b7453e9-875e-e2af-8152-1470a98dfbf6",
+      "name": "Shape: other",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        440
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Suppression",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "b9664fa9-188d-1e96-603c-77141b384542",
+      "name": "Add to Suppression",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3020,
+        160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "7a9f72ba-2982-b82e-a821-8b219be8b8ea",
+      "name": "Update Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        5440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: {\n  timestamp: new Date().toISOString(), prospect_id: i.json.prospect_id || '', workflow: 'OA-05-inbox-agent',\n  event: i.json._event || 'updated', detail: String(i.json._detail || '').slice(0, 900) } }));"
+      },
+      "id": "ede994df-73d9-5406-3a25-c1b12bc01c60",
+      "name": "Build Event Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "418e50c2-109b-a473-4c86-94f74863939b",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        5880,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Gmail Trigger: Unread Inbox": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Load Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Prospects": {
+      "main": [
+        [
+          {
+            "node": "Match to Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match to Prospect": {
+      "main": [
+        [
+          {
+            "node": "Loop Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Replies": {
+      "main": [
+        [
+          {
+            "node": "Replies Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Re-read Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Prospect": {
+      "main": [
+        [
+          {
+            "node": "Bounce or Reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini (Classifier)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Classify Reply",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Classification JSON": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Classify Reply",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bounce or Reply?": {
+      "main": [
+        [
+          {
+            "node": "Bounce Item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Classify Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Classify Reply": {
+      "main": [
+        [
+          {
+            "node": "Normalise Classification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalise Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise Classification": {
+      "main": [
+        [
+          {
+            "node": "Mark Email Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bounce Item": {
+      "main": [
+        [
+          {
+            "node": "Mark Email Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Email Read": {
+      "main": [
+        [
+          {
+            "node": "Classified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classified": {
+      "main": [
+        [
+          {
+            "node": "Route by Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Category": {
+      "main": [
+        [
+          {
+            "node": "Shape: replied",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: snoozed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: unsubscribe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: out_of_office",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: bounce",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: other",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: replied": {
+      "main": [
+        [
+          {
+            "node": "Set replied (stop follow-ups)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set replied (stop follow-ups)": {
+      "main": [
+        [
+          {
+            "node": "Shape: reply_received Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: reply_received Event": {
+      "main": [
+        [
+          {
+            "node": "Log reply_received",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log reply_received": {
+      "main": [
+        [
+          {
+            "node": "Approve Reply (Gmail Send & Wait)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approve Reply (Gmail Send & Wait)": {
+      "main": [
+        [
+          {
+            "node": "Parse Reply Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Reply Decision": {
+      "main": [
+        [
+          {
+            "node": "Re-read Before Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Before Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Reply?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reply?": {
+      "main": [
+        [
+          {
+            "node": "Reply in Thread (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Reply Not Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply in Thread (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Shape: Reply Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Reply Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Reply Message": {
+      "main": [
+        [
+          {
+            "node": "Save Reply to Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Reply to Messages": {
+      "main": [
+        [
+          {
+            "node": "Shape: in_conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: unsubscribe": {
+      "main": [
+        [
+          {
+            "node": "Add to Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: bounce": {
+      "main": [
+        [
+          {
+            "node": "Add to Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Prospect": {
+      "main": [
+        [
+          {
+            "node": "Build Event Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event Row": {
+      "main": [
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Event": {
+      "main": [
+        [
+          {
+            "node": "Loop Replies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: in_conversation": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Reply Failed": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Reply Not Sent": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: snoozed": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: out_of_office": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: other": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add to Suppression": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REPLACE_WITH_OA99_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

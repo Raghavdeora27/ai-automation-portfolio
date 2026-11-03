@@ -1,0 +1,1088 @@
+{
+  "name": "OA-01 Outreach Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 1. Three ways in\nProspects arrive through:\n- **Form** lives in **OA-00 Form Intake**, which calls this workflow via **When Executed by Another Workflow** (accept all data) -> source `form`. (n8n Form Trigger workflows cannot contain Respond to Webhook nodes, so the form is split out.)\n- **Webhook** `POST /webhook/outreach-intake` with header `x-webhook-secret` (= env `OUTREACH_WEBHOOK_SECRET`). Body: one prospect object, an array, or `{ \"prospects\": [...] }`\n- **Schedule**: picks up rows pasted into **Prospects** with status `new_import`",
+        "height": 260,
+        "width": 700,
+        "color": 4
+      },
+      "id": "ed28e389-d7b3-9c55-bb12-25748e9b8f68",
+      "name": "Note: 1. Three ways in",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 2. Clean, dedupe, protect\nNormalise (trim, lowercase email, company domain from website or business email), validate email, then dedupe against the CRM by **email AND company domain** (free-mail domains are never used for domain dedupe) and check the **Suppression** tab. Deterministic `prospect_id` = hash of email.",
+        "height": 260,
+        "width": 640,
+        "color": 5
+      },
+      "id": "9ce7d325-9eaf-fe6c-039d-51619f47fef3",
+      "name": "Note: 2. Clean, dedupe, protect",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        980,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 3. Write + audit trail\nNew prospects get status `new` (OA-02-research-draft picks them up). Sheet-import rows are updated in place; rejected imports are marked `duplicate_email` / `duplicate_domain` / `suppressed` / `invalid_email`. **Every decision is logged to Events.**",
+        "height": 260,
+        "width": 640,
+        "color": 6
+      },
+      "id": "d654c9d6-2274-05bc-020c-96f271f59304",
+      "name": "Note: 3. Write + audit trail",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        -420
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "a9ce5e3d-7e4d-be93-b057-fdef6ff42588",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "outreach-intake",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c9628a88-aec9-6ad5-6340-63946e8c169e",
+      "name": "Webhook: Prospect API",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        100
+      ],
+      "webhookId": "252383c7-3349-dd2b-b238-e506ee261f79"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "dc8cbf15-34ed-1bd5-f4b1-19343c85a074",
+      "name": "Every 15 min: Sheet Imports",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa4b1531-3478-7007-9ec0-37913fca2399",
+              "name": "SHEET_ID",
+              "value": "YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "a539063e-4ac9-3c65-1177-7cd1f8e73f3f",
+              "name": "SENDER_NAME",
+              "value": "Raghav",
+              "type": "string"
+            },
+            {
+              "id": "730721de-9996-416e-6a0f-e91f20f39f14",
+              "name": "SENDER_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "f383965c-2915-5191-66c7-de99120b89ee",
+              "name": "APPROVER_EMAIL",
+              "value": "approver@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "812cdcf7-7558-89f2-549f-c25e19cc61ea",
+              "name": "ALERT_EMAIL",
+              "value": "alerts@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "7360d641-ffc4-fdb8-6599-c8a924007693",
+              "name": "DAILY_CAP",
+              "value": 30,
+              "type": "number"
+            },
+            {
+              "id": "79eba11d-9ec0-5905-96a9-177318767719",
+              "name": "DEFAULT_TIMEZONE",
+              "value": "Asia/Kolkata",
+              "type": "string"
+            },
+            {
+              "id": "5558d350-d95a-0643-ab8a-ba1c709330ec",
+              "name": "SEND_WINDOW_START_HOUR",
+              "value": 9,
+              "type": "number"
+            },
+            {
+              "id": "abb02274-4e26-1ee0-2228-b218212a6cb9",
+              "name": "SEND_WINDOW_END_HOUR",
+              "value": 17,
+              "type": "number"
+            },
+            {
+              "id": "e5323302-00d0-ca13-a6b9-f37f1321ebc6",
+              "name": "IGNORE_SEND_WINDOW",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "64fb83b0-1393-6460-7093-4d95374d6659",
+              "name": "FOLLOWUP_1_DELAY_BUSINESS_DAYS",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "3d7ad95c-40b0-5560-becf-24cd5427308c",
+              "name": "FOLLOWUP_2_DELAY_BUSINESS_DAYS",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "c667b6ff-1151-a67e-33cc-9fda79a21f4e",
+              "name": "TEST_FOLLOWUP_DELAY_MINUTES",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "5ad98d79-18e7-21f6-ad5f-f8e534cffa47",
+              "name": "MY_SERVICE_ONE_LINER",
+              "value": "I build small automations that take repetitive admin (follow-ups, bookings, data entry) off a business owner's plate.",
+              "type": "string"
+            },
+            {
+              "id": "60594b21-1c6a-94f4-3acb-a82cae7c9376",
+              "name": "WEBHOOK_SECRET",
+              "value": "={{ (() => { try { return $env.OUTREACH_WEBHOOK_SECRET || ''; } catch (e) { return ''; } })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "79bfdfdf-4c33-f514-3f14-d525ce6b0569",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "57ec1e5e-5817-fe0a-7eef-3e7c6e3faf6b",
+                    "leftValue": "={{ Boolean($('Webhook: Prospect API').isExecuted) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "webhook"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b79f47f0-7267-828d-5852-122f3eba16e2",
+                    "leftValue": "={{ Boolean($('When Executed by Another Workflow').isExecuted) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "form"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "631d6e59-0cbd-7021-561c-30973239c3a9",
+                    "leftValue": "={{ Boolean($('Every 15 min: Sheet Imports').isExecuted) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "sheet_import"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "a2459d24-ed1d-a2bd-f56f-d12a8c63a005",
+      "name": "Route by Source",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        440,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3858b4b5-abb9-599d-da9e-8d3d749ffb3f",
+              "leftValue": "={{ Boolean((() => { const s = String($('Config').first().json.WEBHOOK_SECRET || ''); const h = String(($('Webhook: Prospect API').first().json.headers || {})['x-webhook-secret'] || ''); return s.length >= 16 && h === s; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "1d52954c-08d4-828f-1ddd-3526b18df193",
+      "name": "Secret Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: \"unauthorized\" }) }}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "924b7fbf-8bc2-c647-cdd0-a57962f3fd7f",
+      "name": "Respond 401 Unauthorized",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        920,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, status: \"accepted\" }) }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "a2139055-ff07-63a1-4244-f1b23ba7a4e6",
+      "name": "Respond 202 Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        920,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('Webhook: Prospect API').first().json.body || {};\nlet list = Array.isArray(body) ? body : (Array.isArray(body.prospects) ? body.prospects : [body]);\nlist = list.filter(p => p && typeof p === 'object').slice(0, 200);\nreturn list.map(p => ({ json: {\n  first_name: p.first_name ?? p.firstName ?? '', last_name: p.last_name ?? p.lastName ?? '',\n  email: p.email ?? '', company: p.company ?? '', website: p.website ?? p.url ?? '',\n  timezone: p.timezone ?? '', notes: p.notes ?? '', source: p.source || 'webhook', _source: 'webhook' } }));"
+      },
+      "id": "650e40e9-1319-d00e-567a-7c1ac2ce4a11",
+      "name": "Map Webhook Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Items come from \"OA-00 Form Intake\" (Execute Workflow, accept all data).\n// Accepts one prospect per item, or { prospects: [...] }. _source is forced to \"form\" so a caller\n// can never target sheet rows (_row_number is not passed through).\nconst out = [];\nfor (const item of $('When Executed by Another Workflow').all()) {\n  const j = item.json || {};\n  const list = Array.isArray(j.prospects) ? j.prospects : [j];\n  for (const p of list) {\n    if (!p || typeof p !== 'object') continue;\n    out.push({ json: {\n      first_name: p.first_name ?? p.firstName ?? '', last_name: p.last_name ?? p.lastName ?? '',\n      email: p.email ?? '', company: p.company ?? '', website: p.website ?? p.url ?? '',\n      timezone: p.timezone ?? '', notes: p.notes ?? '', source: p.source || 'form', _source: 'form' } });\n  }\n}\nreturn out.slice(0, 200);"
+      },
+      "id": "07c39c49-9340-56a7-590a-18710ff3c973",
+      "name": "Map Form Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "new_import"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "ac9eb10d-8ddc-6b9b-3388-36f716f8ee43",
+      "name": "Read new_import Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().filter(i => i.json && i.json.row_number).map(i => ({ json: { ...i.json,\n  source: i.json.source || 'sheet_import', _source: 'sheet_import', _row_number: i.json.row_number } }));"
+      },
+      "id": "385ad2bf-00f1-4da0-aadc-bb770acf10c5",
+      "name": "Map Sheet Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst FREE = new Set(['gmail.com','googlemail.com','yahoo.com','yahoo.co.in','outlook.com','hotmail.com','live.com','icloud.com','me.com','aol.com','proton.me','protonmail.com','zoho.com','gmx.com','yandex.com','rediffmail.com','msn.com']);\nconst EMAIL_RE = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/;\nconst clean = (s) => String(s ?? '').replace(/\\s+/g, ' ').trim();\n// cyrb53: small deterministic 53-bit hash (no crypto module needed). Two seeds -> 28 hex chars.\nfunction cyrb53(str, seed = 0) {\n  let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;\n  for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }\n  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);\n  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);\n  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0');\n}\nfunction hostOf(url) {\n  let u = clean(url).toLowerCase();\n  if (!u) return '';\n  if (!/^https?:\\/\\//.test(u)) u = 'https://' + u;\n  try { return new URL(u).hostname.replace(/^www\\./, ''); } catch (e) { return ''; }\n}\nconst out = [];\nfor (const item of $input.all()) {\n  const r = item.json;\n  const email = clean(r.email).toLowerCase();\n  const emailDomain = email.includes('@') ? email.split('@').pop() : '';\n  let website = clean(r.website);\n  if (website && !/^https?:\\/\\//i.test(website)) website = 'https://' + website;\n  const webHost = hostOf(website);\n  // company domain: website host first, else business email domain\n  const domain = webHost || (FREE.has(emailDomain) ? '' : emailDomain);\n  if (!website && domain) website = 'https://' + domain;\n  let tz = clean(r.timezone);\n  if (!tz || !DateTime.now().setZone(tz).isValid) tz = CFG.DEFAULT_TIMEZONE;\n  const valid = EMAIL_RE.test(email);\n  out.push({ json: {\n    prospect_id: valid ? 'p_' + cyrb53(email, 1) + cyrb53(email, 7) : '',\n    first_name: clean(r.first_name).replace(/^./, c => c.toUpperCase()),\n    last_name: clean(r.last_name),\n    email, company: clean(r.company), domain, website, timezone: tz,\n    source: clean(r.source) || r._source || 'unknown',\n    notes: clean(r.notes),\n    _source: r._source, _row_number: r._row_number,\n    _email_domain: emailDomain, _free_email: FREE.has(emailDomain),\n    _valid_email: valid,\n  }});\n}\nreturn out;"
+      },
+      "id": "95294746-1865-0769-c971-bab3b03b3ec5",
+      "name": "Normalise & Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "28de7926-043e-c2a3-7062-824d22ddb295",
+      "name": "Load Existing Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1600,
+        100
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Suppression",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "9771f76c-c1ed-ee40-635b-87ada66f4f74",
+      "name": "Load Suppression List",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1820,
+        100
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const lc = (s) => String(s ?? '').trim().toLowerCase();\nconst candidates = $('Normalise & Validate').all().map(i => i.json);\nconst existing = $('Load Existing Prospects').all().map(i => i.json)\n  .filter(r => r && r.prospect_id && lc(r.status) !== 'new_import');\nconst supp = $('Load Suppression List').all().map(i => i.json).filter(r => r && (r.email || r.domain));\nconst emails = new Set(existing.map(r => lc(r.email)).filter(Boolean));\nconst domains = new Set(existing.map(r => lc(r.domain)).filter(Boolean));\nconst suppEmails = new Set(supp.map(r => lc(r.email)).filter(Boolean));\nconst suppDomains = new Set(supp.filter(r => !lc(r.email)).map(r => lc(r.domain)).filter(Boolean));\nconst seenE = new Set(), seenD = new Set();\nconst now = new Date().toISOString();\nreturn candidates.map((c) => {\n  let decision = 'insert', reason = '';\n  if (!c._valid_email) { decision = 'invalid_email'; reason = `invalid email \"${c.email}\"`; }\n  else if (suppEmails.has(c.email) || (c.domain && suppDomains.has(c.domain))) { decision = 'suppressed'; reason = 'on Suppression list'; }\n  else if (emails.has(c.email) || seenE.has(c.email)) { decision = 'duplicate_email'; reason = `email already in CRM: ${c.email}`; }\n  else if (c.domain && (domains.has(c.domain) || seenD.has(c.domain))) { decision = 'duplicate_domain'; reason = `company domain already in CRM: ${c.domain}`; }\n  if (decision === 'insert') { seenE.add(c.email); if (c.domain) seenD.add(c.domain); }\n  const fromSheet = c._source === 'sheet_import' && c._row_number;\n  const base = decision === 'insert'\n    ? { ...c, status: 'new', followup_count: 0, created_at: now, updated_at: now }\n    : { status: decision, notes: [c.notes, reason].filter(Boolean).join(' | '), updated_at: now };\n  const row = { ...base };\n  if (fromSheet) row.row_number = Number(c._row_number);\n  return { json: { ...row, _decision: decision, _reason: reason, _from_sheet: !!fromSheet,\n                   _event_pid: c.prospect_id, _email: c.email, _source: c._source } };\n});"
+      },
+      "id": "1577f140-7870-fd62-3593-9f0198d8cdab",
+      "name": "Dedupe & Suppression Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2040,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e7b09d22-b279-f949-cc5d-4d22efdbf556",
+                    "leftValue": "={{ Boolean($json._decision === 'insert' && $json._from_sheet) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "insert_from_sheet"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "b3ec1aa2-7230-c33d-c296-95321a2dfdd0",
+                    "leftValue": "={{ Boolean($json._decision === 'insert' && !$json._from_sheet) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "insert_new_row"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "7680263c-c1c7-3828-704c-33dfff985161",
+                    "leftValue": "={{ Boolean($json._decision !== 'insert' && $json._from_sheet) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "reject_sheet_row"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "75f2c7b2-9a1b-1063-1e01-dc16ebcb9948",
+                    "leftValue": "={{ Boolean($json._decision !== 'insert' && !$json._from_sheet) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "reject_external"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "2b0350b1-7f5a-5936-d6b4-20b9be7a264e",
+      "name": "Route by Decision",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2260,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "b895f862-838c-2a6f-5072-8f79e02cdf91",
+      "name": "Activate Imported Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2520,
+        -100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "68b2eebb-fc79-a2fc-4afa-bf0879f6f715",
+      "name": "Append New Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2520,
+        60
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "61ba1ff6-9d12-a7d2-57ee-cb5ee17e20a6",
+      "name": "Mark Import Row Rejected",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2520,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date().toISOString();\nreturn $input.all().map(i => ({ json: {\n  timestamp: now, prospect_id: i.json._event_pid || '', workflow: 'OA-01-intake',\n  event: i.json._decision === 'insert' ? 'imported' : 'import_rejected',\n  detail: i.json._decision === 'insert' ? `source=${i.json._source}; ${i.json._email}` : `${i.json._decision}: ${i.json._reason}` } }));"
+      },
+      "id": "8d292a59-01cd-955d-5c7d-83da60ee70a7",
+      "name": "Build Event Rows",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2780,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "9df73315-971d-5a29-c0bb-2fba49cdec5a",
+      "name": "Log to Events",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3000,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Prospect API": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 min: Sheet Imports": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Route by Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Source": {
+      "main": [
+        [
+          {
+            "node": "Secret Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map Form Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read new_import Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Secret Valid?": {
+      "main": [
+        [
+          {
+            "node": "Respond 202 Accepted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 401 Unauthorized",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond 202 Accepted": {
+      "main": [
+        [
+          {
+            "node": "Map Webhook Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read new_import Rows": {
+      "main": [
+        [
+          {
+            "node": "Map Sheet Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Webhook Payload": {
+      "main": [
+        [
+          {
+            "node": "Normalise & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Form Payload": {
+      "main": [
+        [
+          {
+            "node": "Normalise & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Sheet Rows": {
+      "main": [
+        [
+          {
+            "node": "Normalise & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalise & Validate": {
+      "main": [
+        [
+          {
+            "node": "Load Existing Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Existing Prospects": {
+      "main": [
+        [
+          {
+            "node": "Load Suppression List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Suppression List": {
+      "main": [
+        [
+          {
+            "node": "Dedupe & Suppression Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedupe & Suppression Check": {
+      "main": [
+        [
+          {
+            "node": "Route by Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Decision": {
+      "main": [
+        [
+          {
+            "node": "Activate Imported Row",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append New Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Import Row Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Event Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activate Imported Row": {
+      "main": [
+        [
+          {
+            "node": "Build Event Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append New Prospect": {
+      "main": [
+        [
+          {
+            "node": "Build Event Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Import Row Rejected": {
+      "main": [
+        [
+          {
+            "node": "Build Event Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event Rows": {
+      "main": [
+        [
+          {
+            "node": "Log to Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REPLACE_WITH_OA99_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

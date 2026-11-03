@@ -1,6 +1,7 @@
 # 12 — HR onboarding
 
 **Platform:** Make
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,23 @@ Accounts, welcome emails and checklists usually live on three different lists, a
 **Who it's for:** small teams on Google Workspace who track work in ClickUp.
 
 **Tools:** Google Workspace, ClickUp, Slack, on Make.
+
+## Where this is used
+
+Onboarding was part of the process work I automated at BlueBox with Flokzu, ClickUp and Zoho. At Careernet I guided 6,000+ candidates from interview to onboarding, so I know the steps a new hire goes through. This workflow has the account, checklist and welcome email ready before day one.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | A new row on the hiring sheet starts the run | Google Sheets trigger |
+| 2 | Create the Google Workspace user | Google Workspace Admin API |
+| 3 | Open the ClickUp checklist for the manager and IT | ClickUp API |
+| 4 | Send one welcome email | Gmail automation |
+| 5 | Remind the manager while tasks stay open | Scheduled reminders |
+| 6 | Dedupe on the hire and alert on failure | Idempotency, error routes |
 
 ## Business problem
 

@@ -1,6 +1,7 @@
 # 08 — Voice AI agent to CRM
 
 **Platform:** n8n
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,22 @@ A great call is wasted if someone has to replay it and type the details in later
 **Who it's for:** teams answering calls with a voice agent and managing their pipeline in HubSpot.
 
 **Tools:** VAPI, OpenAI, HubSpot, Slack, on n8n.
+
+## Where this is used
+
+A scenario: a clinic or home-services business whose phone line is answered by a voice AI agent. Every call becomes a HubSpot contact with only the details the caller gave, and any requested callback becomes a task for the right person.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Receive the VAPI end-of-call report | Webhook intake and verification |
+| 2 | Extract the caller's details and requested next step from the transcript | AI extraction, structured output |
+| 3 | Upsert the HubSpot contact by phone | HubSpot API, dedupe |
+| 4 | Create a task for the right owner when a next step was asked for | CRM automation |
+| 5 | Alert on failure | Error handling |
 
 ## Business problem
 

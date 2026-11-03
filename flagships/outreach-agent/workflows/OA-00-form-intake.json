@@ -1,0 +1,175 @@
+{
+  "name": "OA-00 Form Intake",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Form intake (calls OA-01)\nManual add / demo form. n8n does not allow **Respond to Webhook** nodes in a workflow started by an **n8n Form Trigger**, and OA-01 needs them for its webhook API, so the form lives here.\n\n1. **Form: Add Prospect** collects the fields\n2. **Map Form Fields** shapes them like the webhook payload\n3. **Run OA-01 Intake** (Execute Workflow, by ID, waits) runs OA-01's normalise -> dedupe -> append -> Events path with source `form`\n4. **Form Ending** shows whether the prospect was added\n\nSetup: paste OA-01's workflow ID into **Run OA-01 Intake** (placeholder `REPLACE_WITH_OA01_INTAKE_WORKFLOW_ID`). Publish OA-01 before publishing this one.",
+        "height": 300,
+        "width": 760,
+        "color": 4
+      },
+      "id": "e84b1b03-e04d-acab-1203-5d43b921aae8",
+      "name": "Note: Form intake (calls OA-01)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -380
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "Add an outreach prospect",
+        "formDescription": "Adds one prospect to the AI Outreach CRM. The agent researches their site and drafts a note for your approval.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "First name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Last name"
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Company"
+            },
+            {
+              "fieldLabel": "Website",
+              "placeholder": "https://example.com"
+            },
+            {
+              "fieldLabel": "Timezone",
+              "placeholder": "IANA zone, e.g. America/New_York (blank = default)"
+            },
+            {
+              "fieldLabel": "Notes",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "responseMode": "onReceived",
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Add prospect"
+        }
+      },
+      "id": "35255245-219a-4671-8c64-5d6245ebc88e",
+      "name": "Form: Add Prospect",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        100
+      ],
+      "webhookId": "a3b4225b-eade-11ef-3d3e-36cf32f69585"
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $('Form: Add Prospect').first().json;\nreturn [{ json: { first_name: f['First name'] || '', last_name: f['Last name'] || '', email: f['Email'] || '',\n  company: f['Company'] || '', website: f['Website'] || '', timezone: f['Timezone'] || '', notes: f['Notes'] || '',\n  source: 'form', _source: 'form' } }];"
+      },
+      "id": "64050764-94ca-e6b8-cd1b-8cc741a27bce",
+      "name": "Map Form Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_OA01_INTAKE_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "1c1ce2a2-52af-3f2d-198b-65d005f60e87",
+      "name": "Run OA-01 Intake",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        100
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "={{ $json.event === 'import_rejected' ? 'Prospect not added' : 'Prospect received' }}",
+        "completionMessage": "={{ (() => { const p = $('Map Form Fields').first().json; const r = $json || {}; if (r.event === 'imported') return p.email + ' was added to the CRM with status \"new\". The agent will research the site and draft a note for your approval.'; if (r.event === 'import_rejected') return p.email + ' was not added: ' + String(r.detail || 'rejected') + '.'; return p.email + ' was submitted to intake. Check the Events tab in the CRM sheet for the result.'; })() }}",
+        "options": {}
+      },
+      "id": "45127dec-53a8-51c4-95c0-75512833f9e6",
+      "name": "Form Ending",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.3,
+      "position": [
+        660,
+        100
+      ],
+      "webhookId": "54a98b5e-f4b7-53d8-6636-befa699f5cde"
+    }
+  ],
+  "connections": {
+    "Form: Add Prospect": {
+      "main": [
+        [
+          {
+            "node": "Map Form Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Form Fields": {
+      "main": [
+        [
+          {
+            "node": "Run OA-01 Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run OA-01 Intake": {
+      "main": [
+        [
+          {
+            "node": "Form Ending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REPLACE_WITH_OA99_ERROR_HANDLER_WORKFLOW_ID",
+    "timezone": "Asia/Kolkata"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

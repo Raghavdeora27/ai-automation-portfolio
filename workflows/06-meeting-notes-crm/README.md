@@ -1,6 +1,7 @@
 # 06 — Meeting notes to CRM
 
 **Platform:** n8n
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,22 @@ The useful bits of a call get lost in the transcript, and the follow-up everyone
 **Who it's for:** sales and account teams on Zoho CRM who record their calls.
 
 **Tools:** OpenAI, Zoho CRM, Slack, on n8n.
+
+## Where this is used
+
+A scenario: a small sales or account team on Zoho CRM that records its client calls. As soon as a call ends, the CRM record has a short note and the agreed follow-ups are tasks with an owner, so nothing promised on the call is forgotten.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Receive the finished transcript | Webhook intake |
+| 2 | Extract a short summary and the stated action items with a fixed schema | AI extraction, structured output |
+| 3 | Match the Zoho CRM record | Zoho CRM API |
+| 4 | Write one note, plus one task per stated action (due date only when one was said) | CRM automation |
+| 5 | Dedupe on the meeting id, and alert on failure | Idempotency, error handling |
 
 ## Business problem
 

@@ -1,0 +1,473 @@
+{
+  "name": "OA-06 Weekly Report",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Weekly report (Mondays 09:00)\nCounts the last 7 days from **Events** (imported, drafted, approved, sent, follow-ups, replies by category, bounces, unsubscribes) plus the current pipeline from **Prospects**, asks Gemini for a 3-line insight, and emails an HTML report to REPORT_EMAIL.\n\nThe 09:00 uses the workflow timezone (**Settings → Timezone**, set to Asia/Kolkata in this file).",
+        "height": 260,
+        "width": 640,
+        "color": 4
+      },
+      "id": "6c94e2a1-8e64-c455-e3fe-57153fdb510a",
+      "name": "Note: Weekly report (Mondays 09:00)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -380
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "c7ccf025-b2e2-f33c-ca40-ed05dee921c7",
+      "name": "Every Monday 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa4b1531-3478-7007-9ec0-37913fca2399",
+              "name": "SHEET_ID",
+              "value": "YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "a539063e-4ac9-3c65-1177-7cd1f8e73f3f",
+              "name": "SENDER_NAME",
+              "value": "Raghav",
+              "type": "string"
+            },
+            {
+              "id": "730721de-9996-416e-6a0f-e91f20f39f14",
+              "name": "SENDER_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "f383965c-2915-5191-66c7-de99120b89ee",
+              "name": "APPROVER_EMAIL",
+              "value": "approver@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "812cdcf7-7558-89f2-549f-c25e19cc61ea",
+              "name": "ALERT_EMAIL",
+              "value": "alerts@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "7360d641-ffc4-fdb8-6599-c8a924007693",
+              "name": "DAILY_CAP",
+              "value": 30,
+              "type": "number"
+            },
+            {
+              "id": "79eba11d-9ec0-5905-96a9-177318767719",
+              "name": "DEFAULT_TIMEZONE",
+              "value": "Asia/Kolkata",
+              "type": "string"
+            },
+            {
+              "id": "5558d350-d95a-0643-ab8a-ba1c709330ec",
+              "name": "SEND_WINDOW_START_HOUR",
+              "value": 9,
+              "type": "number"
+            },
+            {
+              "id": "abb02274-4e26-1ee0-2228-b218212a6cb9",
+              "name": "SEND_WINDOW_END_HOUR",
+              "value": 17,
+              "type": "number"
+            },
+            {
+              "id": "e5323302-00d0-ca13-a6b9-f37f1321ebc6",
+              "name": "IGNORE_SEND_WINDOW",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "64fb83b0-1393-6460-7093-4d95374d6659",
+              "name": "FOLLOWUP_1_DELAY_BUSINESS_DAYS",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "3d7ad95c-40b0-5560-becf-24cd5427308c",
+              "name": "FOLLOWUP_2_DELAY_BUSINESS_DAYS",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "c667b6ff-1151-a67e-33cc-9fda79a21f4e",
+              "name": "TEST_FOLLOWUP_DELAY_MINUTES",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "5ad98d79-18e7-21f6-ad5f-f8e534cffa47",
+              "name": "MY_SERVICE_ONE_LINER",
+              "value": "I build small automations that take repetitive admin (follow-ups, bookings, data entry) off a business owner's plate.",
+              "type": "string"
+            },
+            {
+              "id": "1db49e65-01ea-49d8-5b26-f42af9bdd627",
+              "name": "REPORT_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "53e06087-3e7f-7703-fbb9-6b72a382fa86",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "d51e3684-6497-1213-10ac-dfcb91c9ace9",
+      "name": "Read Events",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "a90918b8-1543-0868-f05a-5612e725c82f",
+      "name": "Read Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const lc = (s) => String(s ?? '').trim().toLowerCase();\nconst since = Date.now() - 7 * 864e5;\nconst events = $('Read Events').all().map(i => i.json).filter(r => r && r.timestamp && Date.parse(r.timestamp) >= since);\nconst prospects = $('Read Prospects').all().map(i => i.json).filter(r => r && r.prospect_id);\nconst count = (name) => events.filter(e => lc(e.event) === name).length;\nconst replyCats = {};\nfor (const e of events.filter(e => lc(e.event) === 'reply_received')) {\n  const cat = String(e.detail || '').split(':')[0].trim() || 'other'; replyCats[cat] = (replyCats[cat] || 0) + 1;\n}\nconst pipeline = {};\nfor (const p of prospects) pipeline[p.status || 'blank'] = (pipeline[p.status || 'blank'] || 0) + 1;\nconst sent = count('sent'), fu = count('followup_sent'), replies = count('reply_received');\nconst metrics = {\n  period: `${new Date(since).toISOString().slice(0, 10)} to ${new Date().toISOString().slice(0, 10)}`,\n  imported: count('imported'), import_rejected: count('import_rejected'), drafted: count('drafted'), disqualified: count('disqualified'),\n  research_failed: count('research_failed'), approved: count('approved') + count('approved_with_edits'), rejected: count('rejected'),\n  first_touch_sent: sent, followups_sent: fu, replies, reply_rate_pct: sent ? Math.round((replies / sent) * 1000) / 10 : 0,\n  reply_categories: replyCats, replies_we_sent: count('reply_sent'), bounced: count('bounced'), unsubscribed: count('unsubscribed'),\n  snoozed: count('snoozed'), errors: count('send_failed') + count('followup_failed') + count('reply_failed'), pipeline,\n};\nreturn [{ json: { metrics, metrics_text: JSON.stringify(metrics, null, 1).replace(/[{}]/g, ' ') } }];"
+      },
+      "id": "d8263aef-7352-d752-95c2-41938e02be4e",
+      "name": "Compute Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Here are last week's cold outreach numbers for a freelance automation builder:\n{{ $json.metrics_text }}\n\nWrite exactly 3 short lines, plain text, no bullets or numbering: line 1 what happened, line 2 the most important signal (reply rate, bounces, approvals, or quality), line 3 one concrete action for next week. If volumes are tiny, say so plainly instead of over-interpreting.",
+        "hasOutputParser": false
+      },
+      "id": "0126a346-b213-f800-d724-08b52e5e1d1e",
+      "name": "AI Weekly Insight",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        1100,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "6b530d85-da07-7a64-bee2-4a636864f6fe",
+      "name": "Gemini (Insight)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "parameters": {
+        "jsCode": "const m = $('Compute Metrics').first().json.metrics;\nconst insight = String($input.first().json.text || '').trim();\nconst esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst row = (k, v) => `<tr><td style=\"padding:4px 12px 4px 0\">${esc(k)}</td><td><b>${esc(v)}</b></td></tr>`;\nconst rows = [['Imported', m.imported], ['Rejected at intake (dupes/suppressed/invalid)', m.import_rejected], ['Drafted', m.drafted], ['Disqualified (not a fit)', m.disqualified],\n  ['Research failed', m.research_failed], ['Approved', m.approved], ['Rejected by you', m.rejected], ['First emails sent', m.first_touch_sent],\n  ['Follow-ups sent', m.followups_sent], ['Replies', m.replies], ['Reply rate', m.reply_rate_pct + '%'], ['Replies we sent', m.replies_we_sent],\n  ['Bounced', m.bounced], ['Unsubscribed', m.unsubscribed], ['Snoozed', m.snoozed], ['Send errors', m.errors]].map(([k, v]) => row(k, v)).join('');\nconst cats = Object.entries(m.reply_categories).map(([k, v]) => `${esc(k)}: ${v}`).join(', ') || 'none';\nconst pipe = Object.entries(m.pipeline).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${esc(k)}: ${v}`).join(', ') || 'empty';\nconst html = `<h2>Outreach weekly report</h2><p>${esc(m.period)}</p>\n<p style=\"background:#f4f6f8;padding:10px;border-radius:6px\">${esc(insight || '(insight unavailable)').replace(/\\n/g, '<br>')}</p>\n<table>${rows}</table><p><b>Reply categories:</b> ${cats}</p><p><b>Pipeline now:</b> ${pipe}</p>`;\nreturn [{ json: { html, subject: `Outreach weekly: ${m.first_touch_sent} sent, ${m.replies} replies (${m.reply_rate_pct}%)`, detail: `sent=${m.first_touch_sent} replies=${m.replies} bounced=${m.bounced}` } }];"
+      },
+      "id": "ebf141f4-3c40-e5ed-f1d5-918502cc42c5",
+      "name": "Build HTML Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1380,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $('Config').first().json.REPORT_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "2d1e6e94-a0a8-3f44-3628-b31a819c7683",
+      "name": "Email Report (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1600,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { timestamp: new Date().toISOString(), prospect_id: '', workflow: 'OA-06-weekly-report', event: 'weekly_report_sent', detail: $('Build HTML Report').first().json.detail } }];"
+      },
+      "id": "0ccfe624-0269-4f0a-8f7b-724deb1d5033",
+      "name": "Shape: Report Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "1f3495a7-d2fa-1ce4-8da3-0d87a1e07265",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2040,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Gemini (Insight)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Weekly Insight",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every Monday 09:00": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Read Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Events": {
+      "main": [
+        [
+          {
+            "node": "Read Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Prospects": {
+      "main": [
+        [
+          {
+            "node": "Compute Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Metrics": {
+      "main": [
+        [
+          {
+            "node": "AI Weekly Insight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Weekly Insight": {
+      "main": [
+        [
+          {
+            "node": "Build HTML Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build HTML Report": {
+      "main": [
+        [
+          {
+            "node": "Email Report (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Report (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Shape: Report Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Report Event": {
+      "main": [
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REPLACE_WITH_OA99_ERROR_HANDLER_WORKFLOW_ID",
+    "timezone": "Asia/Kolkata"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

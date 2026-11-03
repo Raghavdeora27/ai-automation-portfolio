@@ -1,0 +1,284 @@
+{
+  "name": "OA-99 Error Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Error handler\nEvery outreach workflow points its **Settings → Error workflow** here.\n\n1. Error Trigger receives the failed execution\n2. Config holds ALERT_EMAIL + SHEET_ID\n3. Format a readable alert\n4. Email the alert **and** append a row to the **Errors** tab (each branch continues even if the other fails).",
+        "height": 240,
+        "width": 520,
+        "color": 3
+      },
+      "id": "cd9854f6-a0f5-f56a-130c-fa477caabf2c",
+      "name": "Note: Error handler",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -260
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f8bd8bf9-a9f4-fe8c-8ab4-0cce4c5a3b5e",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa4b1531-3478-7007-9ec0-37913fca2399",
+              "name": "SHEET_ID",
+              "value": "YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "a539063e-4ac9-3c65-1177-7cd1f8e73f3f",
+              "name": "SENDER_NAME",
+              "value": "Raghav",
+              "type": "string"
+            },
+            {
+              "id": "730721de-9996-416e-6a0f-e91f20f39f14",
+              "name": "SENDER_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "f383965c-2915-5191-66c7-de99120b89ee",
+              "name": "APPROVER_EMAIL",
+              "value": "approver@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "812cdcf7-7558-89f2-549f-c25e19cc61ea",
+              "name": "ALERT_EMAIL",
+              "value": "alerts@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "7360d641-ffc4-fdb8-6599-c8a924007693",
+              "name": "DAILY_CAP",
+              "value": 30,
+              "type": "number"
+            },
+            {
+              "id": "79eba11d-9ec0-5905-96a9-177318767719",
+              "name": "DEFAULT_TIMEZONE",
+              "value": "Asia/Kolkata",
+              "type": "string"
+            },
+            {
+              "id": "5558d350-d95a-0643-ab8a-ba1c709330ec",
+              "name": "SEND_WINDOW_START_HOUR",
+              "value": 9,
+              "type": "number"
+            },
+            {
+              "id": "abb02274-4e26-1ee0-2228-b218212a6cb9",
+              "name": "SEND_WINDOW_END_HOUR",
+              "value": 17,
+              "type": "number"
+            },
+            {
+              "id": "e5323302-00d0-ca13-a6b9-f37f1321ebc6",
+              "name": "IGNORE_SEND_WINDOW",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "64fb83b0-1393-6460-7093-4d95374d6659",
+              "name": "FOLLOWUP_1_DELAY_BUSINESS_DAYS",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "3d7ad95c-40b0-5560-becf-24cd5427308c",
+              "name": "FOLLOWUP_2_DELAY_BUSINESS_DAYS",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "c667b6ff-1151-a67e-33cc-9fda79a21f4e",
+              "name": "TEST_FOLLOWUP_DELAY_MINUTES",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "5ad98d79-18e7-21f6-ad5f-f8e534cffa47",
+              "name": "MY_SERVICE_ONE_LINER",
+              "value": "I build small automations that take repetitive admin (follow-ups, bookings, data entry) off a business owner's plate.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "90898e96-ab82-7615-1455-943b22227d89",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e = $('Error Trigger').first().json;\nconst ex = e.execution || {};\nconst trig = e.trigger || {};\nconst err = ex.error || trig.error || {};\nconst out = {\n  timestamp: new Date().toISOString(),\n  workflow: (e.workflow && e.workflow.name) || 'unknown workflow',\n  node: ex.lastNodeExecuted || (err.node && err.node.name) || 'n/a (trigger error)',\n  error_message: String(err.message || err.description || 'Unknown error').slice(0, 1500),\n  execution_id: ex.id || '',\n  execution_url: ex.url || '',\n  mode: ex.mode || trig.mode || '',\n};\nconst esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nout.subject = `[Outreach ALERT] ${out.workflow} failed at \"${out.node}\"`;\nout.html = `<h3>Outreach workflow error</h3>\n<p><b>Workflow:</b> ${esc(out.workflow)}<br><b>Node:</b> ${esc(out.node)}<br><b>When (UTC):</b> ${out.timestamp}<br><b>Mode:</b> ${esc(out.mode)}</p>\n<p><b>Error:</b><br><code>${esc(out.error_message)}</code></p>\n${out.execution_url ? `<p><a href=\"${out.execution_url}\">Open the failed execution</a></p>` : '<p>(No execution URL - set N8N_EDITOR_BASE_URL / WEBHOOK_URL on your instance to get links.)</p>'}\n<p>Tip: if a prospect is stuck in a transient status (researching / pending_approval), reset its status in the Prospects tab.</p>`;\nreturn [{ json: out }];"
+      },
+      "id": "aa89b38c-19ab-d2db-3124-a912d263fd3c",
+      "name": "Format Error Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $('Config').first().json.ALERT_EMAIL }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "90c9dbfe-3485-29ba-79bd-1bbeaa50d09c",
+      "name": "Email Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        680,
+        0
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const e = $('Format Error Details').first().json;\nreturn [{ json: { timestamp: e.timestamp, workflow: e.workflow, node: e.node, error_message: e.error_message,\n  execution_id: e.execution_id, execution_url: e.execution_url, mode: e.mode } }];"
+      },
+      "id": "e6b72116-ea4e-718c-c4c6-b88f20d1437e",
+      "name": "Shape: Error Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Errors",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "15130f7d-a648-b7f6-49b6-962879a2b00f",
+      "name": "Append Errors: Error Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Shape: Error Row": {
+      "main": [
+        [
+          {
+            "node": "Append Errors: Error Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Format Error Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Details": {
+      "main": [
+        [
+          {
+            "node": "Email Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Shape: Error Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

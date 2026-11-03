@@ -1,14 +1,15 @@
 # 02 — AI lead qualification to Sheet and hot-lead alert
 
 **Platform:** n8n
+**Type:** single automation (plain number, no prefix)
 **Status:** ✅ Built (v1)
 
-Built in n8n. The canvas is named `02 · AI lead qualification → Sheet + hot-lead alert`. A form submission is scored, logged to Google Sheets, and emailed down one of two branches. The n8n export and the canvas screenshot are not in this folder yet. This folder does not include a saved model response.
+Built in n8n. The canvas is named `02 · AI lead qualification → Sheet + hot-lead alert`. A form submission is scored, logged to Google Sheets, and emailed down one of two branches. The n8n export is not in this folder yet. This folder does not include a saved model response.
 
-Screenshots: coming soon.
+Screenshot: [`screenshots/canvas.png`](screenshots/canvas.png).
 Exports: coming soon.
 
-The folder slug stays `02-ai-email-triage-crm` so existing links keep working.
+The folder slug stays `02-ai-email-triage-crm` so existing links keep working. The name comes from an earlier plan. What's built is the basic AI lead qualification flow described here: form → AI score → Sheet → hot-lead alert or thank-you. It doesn't triage email or write to a CRM.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -27,6 +28,22 @@ Leads fill in a form and then wait, because someone still has to decide who is w
 **Tools:** n8n Form, Google Gemini, Google Sheets, Gmail, on n8n.
 
 This v1 does not use OpenAI, HubSpot, or Slack.
+
+## Where this is used
+
+A scenario: a coaching or consulting business that takes enquiries on its website form. I'd set this up so the owner hears about a hot lead the moment the form is submitted, and every other lead gets a thank-you with next steps straight away instead of waiting for a reply.
+
+## Steps and skills
+
+These are the steps I built, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | **Lead Form** (n8n Form Trigger) takes the submission | n8n forms |
+| 2 | **AI Score Lead**: a Gemini chat model with a Structured Output Parser returns a score and a qualification as JSON | AI scoring, structured output, prompt design |
+| 3 | **Log Lead to Sheet** appends the lead to Google Sheets | Google Sheets integration |
+| 4 | **Is Hot Lead?** (IF) picks the branch | Routing logic |
+| 5 | **Alert: Hot Lead** emails the owner, or **Reply: Thanks + Next Steps** emails the lead | Gmail automation |
 
 ## Business problem
 
@@ -83,13 +100,13 @@ v1 does not do these yet.
 
 ## Files
 
-Screenshots: coming soon.
+In this folder: [`screenshots/canvas.png`](screenshots/canvas.png), a screenshot of the live build.
+
 Exports: coming soon.
 
 Not in this folder yet:
 
 - n8n workflow export.
-- Screenshot of the canvas.
 - A saved Gemini response.
 
 `sample-data/` holds one fictional form submission. It is not a client lead.
