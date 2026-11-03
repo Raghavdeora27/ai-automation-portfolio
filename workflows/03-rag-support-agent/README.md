@@ -1,6 +1,7 @@
 # 03 — RAG support agent
 
 **Platform:** n8n
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,24 @@ Customers want fast answers, but an AI that guesses is worse than no AI at all.
 **Who it's for:** support teams with a real knowledge base who want the easy questions handled.
 
 **Tools:** Supabase (document search), OpenAI or Claude, Slack, on n8n.
+
+## Where this is used
+
+At JobRays I built Ray, its AI career companion chatbot, so I've already shipped an AI assistant that answers users inside a live product. This workflow uses the same idea for support: answers come only from your own docs, and anything it can't answer goes to a person. It's the core of the planned [SA (Support Agent)](../../flagships/support-agent/) flagship.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Receive the question and check the request | Webhook security |
+| 2 | Search your documents with vector search | RAG, Supabase pgvector, embeddings |
+| 3 | Draft an answer only from the matched sources | AI answering with citations, guardrails |
+| 4 | Gate on match strength and topic, and escalate to Slack when unsure | Confidence thresholds, human handoff |
+| 5 | Log the question, sources and outcome | Outcome logging |
+
+This is the answering core of the planned [SA (Support Agent)](../../flagships/support-agent/) flagship.
 
 ## Business problem
 

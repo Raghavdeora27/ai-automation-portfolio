@@ -1,0 +1,1241 @@
+{
+  "name": "OA-04 Follow-ups",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Follow-ups (hourly)\nFinds prospects in `sent` / `followup_1` / `followup_2` whose **next_followup_at** is due, then per prospect:\n1. Re-read status (skip if it changed)\n2. Get the **Gmail thread** - any message not from SENDER_EMAIL → `replied` (OA-05-inbox-agent handles the reply); a mailer-daemon message → `bounced` + Suppression\n3. Already sent 2 follow-ups → `no_response`\n4. Otherwise Gemini writes a 2-3 line nudge, replied **in the same thread**:\n   sent → `followup_1` (+4 business days) → `followup_2` → `no_response`\n\nSending respects the send window, DAILY_CAP and Suppression exactly like 03. Reply/bounce detection runs any time.",
+        "height": 380,
+        "width": 780,
+        "color": 4
+      },
+      "id": "cb238b32-6f96-27f5-80b1-42675a977ee9",
+      "name": "Note: Follow-ups (hourly)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -560
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "b4750165-b4c1-ed87-1adc-2dfc2d5552e8",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa4b1531-3478-7007-9ec0-37913fca2399",
+              "name": "SHEET_ID",
+              "value": "YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "a539063e-4ac9-3c65-1177-7cd1f8e73f3f",
+              "name": "SENDER_NAME",
+              "value": "Raghav",
+              "type": "string"
+            },
+            {
+              "id": "730721de-9996-416e-6a0f-e91f20f39f14",
+              "name": "SENDER_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "f383965c-2915-5191-66c7-de99120b89ee",
+              "name": "APPROVER_EMAIL",
+              "value": "approver@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "812cdcf7-7558-89f2-549f-c25e19cc61ea",
+              "name": "ALERT_EMAIL",
+              "value": "alerts@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "7360d641-ffc4-fdb8-6599-c8a924007693",
+              "name": "DAILY_CAP",
+              "value": 30,
+              "type": "number"
+            },
+            {
+              "id": "79eba11d-9ec0-5905-96a9-177318767719",
+              "name": "DEFAULT_TIMEZONE",
+              "value": "Asia/Kolkata",
+              "type": "string"
+            },
+            {
+              "id": "5558d350-d95a-0643-ab8a-ba1c709330ec",
+              "name": "SEND_WINDOW_START_HOUR",
+              "value": 9,
+              "type": "number"
+            },
+            {
+              "id": "abb02274-4e26-1ee0-2228-b218212a6cb9",
+              "name": "SEND_WINDOW_END_HOUR",
+              "value": 17,
+              "type": "number"
+            },
+            {
+              "id": "e5323302-00d0-ca13-a6b9-f37f1321ebc6",
+              "name": "IGNORE_SEND_WINDOW",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "64fb83b0-1393-6460-7093-4d95374d6659",
+              "name": "FOLLOWUP_1_DELAY_BUSINESS_DAYS",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "3d7ad95c-40b0-5560-becf-24cd5427308c",
+              "name": "FOLLOWUP_2_DELAY_BUSINESS_DAYS",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "c667b6ff-1151-a67e-33cc-9fda79a21f4e",
+              "name": "TEST_FOLLOWUP_DELAY_MINUTES",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "5ad98d79-18e7-21f6-ad5f-f8e534cffa47",
+              "name": "MY_SERVICE_ONE_LINER",
+              "value": "I build small automations that take repetitive admin (follow-ups, bookings, data entry) off a business owner's plate.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8d91e997-60b5-ca42-7a7b-6027fb00d6f9",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "99eae49a-a378-b513-02a7-c5eeff667b5b",
+      "name": "Read All Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        440,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "ce36b299-06ff-3bc9-03f7-6c4171f66edb",
+      "name": "Load Events (cap)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        660,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Suppression",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "9ba30130-6e51-d6b2-3a7d-34c3d7638fcb",
+      "name": "Load Suppression",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        880,
+        0
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst now = Date.now();\nconst due = rowsOf('Read All Prospects').filter(r => ['sent', 'followup_1', 'followup_2'].includes(r.status) && r.prospect_id &&\n  r.thread_id && r.next_followup_at && Date.parse(r.next_followup_at) <= now);\nconst supp = rowsOf('Load Suppression');\nlet budget = Math.max(0, Number(CFG.DAILY_CAP || 30) - sentTodayCount(rowsOf('Load Events (cap)')));\nreturn due.slice(0, 25).map(p => {\n  const suppressed = isSuppressed(p.email, p.domain, supp);\n  const w = sendWindow(p.timezone);\n  let can_send = !suppressed && w.ok && budget > 0 && p.status !== 'followup_2';\n  if (can_send) budget--;\n  return { json: { ...p, _planned_status: p.status, _suppressed: suppressed, _can_send: can_send,\n    _why_not: suppressed ? 'suppressed' : (!w.ok ? `outside send window (${w.zone} ${w.local})` : (budget <= 0 && !can_send ? 'daily cap reached' : '')) } };\n});"
+      },
+      "id": "c48c5d08-11ae-4263-a525-304137716714",
+      "name": "Select Due Follow-ups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "82b0bcc2-6f83-7a74-8216-16bebb9c6108",
+      "name": "Loop Follow-ups",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1320,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "a33b9d2f-8350-574c-02db-fbe7fcb53fc3",
+      "name": "Follow-ups Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Loop Follow-ups').first(1).json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "d7f8ec0f-378a-9bae-9ecc-39e576c16369",
+      "name": "Re-read Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1540,
+        40
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "87d4103e-fec7-7c58-f02e-4edc298079ba",
+              "leftValue": "={{ Boolean($json.status === $('Loop Follow-ups').first(1).json._planned_status) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "87d4103e-fec7-7c58-f02e-4edc298079ba",
+      "name": "Status Unchanged?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "get",
+        "threadId": "={{ $('Loop Follow-ups').first(1).json.thread_id }}",
+        "simple": true,
+        "options": {}
+      },
+      "id": "3ebef134-0823-761a-29ac-089926714555",
+      "name": "Get Gmail Thread",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1980,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst p = $('Loop Follow-ups').first(1).json;\nconst t = $input.first().json;\nconst me = lc(CFG.SENDER_EMAIL);\nconst msgs = Array.isArray(t.messages) ? t.messages : [];\nconst isSent = (m) => (m.labels || []).some(l => l.id === 'SENT') || (m.labelIds || []).includes('SENT');\nconst fromOf = (m) => lc(m.From || m.from || '');\nconst bounce = msgs.find(m => /mailer-daemon|postmaster/.test(fromOf(m)));\nconst isAuto = (m) => /(out of (the )?office|automatic reply|auto[- ]?reply|autoreply|on (annual )?leave|away from (my|the) (desk|office)|currently away|vacation)/i.test(String(m.Subject || '') + ' ' + String(m.snippet || ''));\nconst reply = msgs.find(m => !isSent(m) && !fromOf(m).includes(me) && !/mailer-daemon|postmaster/.test(fromOf(m)) && !isAuto(m));\nconst lastOurs = [...msgs].reverse().find(m => isSent(m) || fromOf(m).includes(me));\nconst base = { prospect_id: p.prospect_id, updated_at: nowIso() };\nlet action, out;\nif (bounce) { action = 'bounce'; out = { ...base, status: 'bounced', next_followup_at: '', email: p.email, domain: p.domain, reason: 'bounce', added_at: nowIso(), _event: 'bounced', _detail: String(bounce.snippet || '').slice(0, 300) }; }\nelse if (reply) { action = 'update'; out = { ...base, status: 'replied', next_followup_at: '', _event: 'reply_detected', _detail: `reply in thread from ${reply.From || 'prospect'} - handled by OA-05-inbox-agent` }; }\nelse if (p._suppressed) { action = 'update'; out = { ...base, status: 'suppressed', next_followup_at: '', _event: 'followup_blocked_suppressed', _detail: 'on Suppression list' }; }\nelse if (p.status === 'followup_2') { action = 'update'; out = { ...base, status: 'no_response', next_followup_at: '', _event: 'no_response', _detail: 'no reply after 2 follow-ups' }; }\nelse if (!p._can_send) { action = 'skip'; out = { ...base, _detail: p._why_not }; }\nelse {\n  action = 'write';\n  const n = Number(p.followup_count || 0) + 1;\n  out = { ...base, n, reply_to_id: (lastOurs && lastOurs.id) || p.last_message_id, thread_id: p.thread_id, email: p.email, domain: p.domain,\n    first_name: safe(p.first_name), company: safe(p.company), observation: safe(p.observation), timezone: p.timezone,\n    first_subject: safe((msgs[0] && msgs[0].Subject) || ''), first_snippet: safe((msgs[0] && msgs[0].snippet) || '') };\n}\nreturn [{ json: { action, ...out } }];"
+      },
+      "id": "ffc5594a-88ed-d175-ad52-601746fec95e",
+      "name": "Decide Next Step",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('Loop Follow-ups').first(1).json;\nconst e = $input.first().json.error;\nreturn [{ json: { prospect_id: p.prospect_id, status: 'needs_review', updated_at: new Date().toISOString(),\n  _event: 'thread_missing', _detail: 'could not load Gmail thread: ' + String((e && (e.message || e)) || '').slice(0, 300) } }];"
+      },
+      "id": "d5fcc3cd-56e1-9c0a-dc45-ee845370df94",
+      "name": "Shape: Thread Missing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "46bf86cf-14c4-bb2b-a309-0f827d9c6c98",
+                    "leftValue": "={{ Boolean($json.action === 'write') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "write_followup"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "1d5b2604-41be-6688-6eb7-41eb08bf0b83",
+                    "leftValue": "={{ Boolean($json.action === 'bounce') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bounce"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e1e454a5-abdf-2196-3bab-299f669bc65b",
+                    "leftValue": "={{ Boolean($json.action === 'update') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update_status"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "d78d7769-66df-d22a-dc96-075c994fa4e9",
+                    "leftValue": "={{ Boolean($json.action === 'skip') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "skip"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "ea0e52b4-dd20-09f3-720f-fe1a01999f1a",
+      "name": "Route Next Step",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write follow-up number {{ $json.n }} to a cold email that got no reply.\n\nProspect first name: {{ $json.first_name }}\nCompany: {{ $json.company }}\nWhat we noticed on their site: {{ $json.observation }}\nOriginal subject: {{ $json.first_subject }}\nStart of the original email: {{ $json.first_snippet }}\n\nRules: 2 to 3 short lines of plain text, then a blank line, then Best, and {{ $('Config').first().json.SENDER_NAME }} on separate lines. Start with Hi and the first name. Do not repeat the first email. Follow-up 1 adds one small new angle and repeats the offer of a 2-minute video. Follow-up 2 is a polite last note saying you will not keep emailing, and leaves the door open. No guilt-tripping phrases like just bumping this or circling back, no lists, no links, no buzzwords, no exclamation marks.",
+        "hasOutputParser": true
+      },
+      "id": "183e9655-2891-595d-ba79-edcccc268e25",
+      "name": "AI Write Follow-up",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2680,
+        -200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "id": "abe631d0-bbe8-1ce4-cc38-710aa7f07d0f",
+      "name": "Gemini (Follow-up)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"body\": {\n      \"type\": \"string\",\n      \"description\": \"2-3 short lines of plain text plus sign-off\"\n    }\n  },\n  \"required\": [\n    \"body\"\n  ]\n}"
+      },
+      "id": "12a268e8-606d-e15e-203f-11f56177cb90",
+      "name": "Parse Follow-up JSON",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        2820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseLLM(j) {\n  let o = j && j.output !== undefined ? j.output : j;\n  if (o && typeof o.text === 'string' && o.output === undefined && Object.keys(o).length === 1) o = o.text;\n  if (typeof o === 'string') {\n    const m = o.match(/\\{[\\s\\S]*\\}/);\n    try { o = JSON.parse(m ? m[0] : o); } catch (e) { o = { _raw: o }; }\n  }\n  if (o && o.output && typeof o.output === 'object') o = o.output;\n  return o || {};\n}\n\nconst d = $('Decide Next Step').first().json;\nconst o = parseLLM($input.first().json);\nconst body = String(o.body || o._raw || '').trim();\nreturn [{ json: { ...d, body, ok: body.length > 20 } }];"
+      },
+      "id": "31746f3d-2cc9-1e56-998b-ec8f4597e16a",
+      "name": "Prepare Follow-up",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2960,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Decide Next Step').first().json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "74951add-5512-4ad8-8862-0634fbca1698",
+      "name": "Re-read Before Follow-up",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3180,
+        -200
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "386410b3-f783-3402-abb2-8813e2306ce9",
+              "leftValue": "={{ Boolean($json.status === $('Loop Follow-ups').first(1).json._planned_status && $('Prepare Follow-up').first().json.ok) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "386410b3-f783-3402-abb2-8813e2306ce9",
+      "name": "Still Due & Body OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3400,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "thread",
+        "operation": "reply",
+        "threadId": "={{ $('Prepare Follow-up').first().json.thread_id }}",
+        "messageId": "={{ $('Prepare Follow-up').first().json.reply_to_id }}",
+        "emailType": "text",
+        "message": "={{ $('Prepare Follow-up').first().json.body }}",
+        "options": {
+          "replyToRecipientsOnly": true,
+          "senderName": "={{ $('Config').first().json.SENDER_NAME }}"
+        }
+      },
+      "id": "7d344d52-ad6e-5290-3887-17119703c925",
+      "name": "Reply in Thread (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3620,
+        -260
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $('Prepare Follow-up').first().json;\nconst r = $input.first().json;\nconst now = new Date().toISOString();\nreturn [{ json: { message_key: `${f.prospect_id}-followup${f.n}-${Date.now()}`, prospect_id: f.prospect_id, email: f.email, domain: f.domain,\n  kind: `followup_${f.n}`, subject: 'Re: ' + f.first_subject, body: f.body, quality_score: '', status: 'sent',\n  thread_id: r.threadId || f.thread_id, gmail_message_id: r.id || '', created_at: now, sent_at: now } }];"
+      },
+      "id": "d30afc58-d4ea-6c41-9b4c-dd36a2955619",
+      "name": "Shape: Follow-up Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        -320
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "ca618a00-4c4f-41a5-6750-0485c60fef09",
+      "name": "Save Follow-up to Messages",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4060,
+        -320
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst f = $('Prepare Follow-up').first().json;\nconst r = $('Reply in Thread (Gmail)').first().json;\nconst status = f.n >= 2 ? 'followup_2' : 'followup_1';\n// after follow-up 1 wait FOLLOWUP_2_DELAY; after follow-up 2 wait the same again before closing as no_response\nconst next = nextFollowupIso(CFG.FOLLOWUP_2_DELAY_BUSINESS_DAYS || 4, f.timezone);\nreturn [{ json: { prospect_id: f.prospect_id, status, followup_count: f.n, last_message_id: r.id || f.reply_to_id, next_followup_at: next,\n  updated_at: nowIso(), _event: 'followup_sent', _detail: `follow-up ${f.n} in thread ${f.thread_id}` } }];"
+      },
+      "id": "50a606f3-7b11-5201-a636-c828509f1eca",
+      "name": "Shape: Prospect Followed-up",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4280,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const f = $('Prepare Follow-up').first().json;\nconst e = $input.first().json.error;\nreturn [{ json: { prospect_id: f.prospect_id, updated_at: new Date().toISOString(), _event: 'followup_failed',\n  _detail: String((e && (e.message || e)) || 'Gmail error').slice(0, 400) + ' (will retry next hour)' } }];"
+      },
+      "id": "b082ac4b-09aa-0e43-90ee-f6e0d98855c0",
+      "name": "Shape: Follow-up Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3840,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Suppression",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "4053db11-ef8a-e74d-51c9-f6ba2f837c5b",
+      "name": "Add Bounce to Suppression",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2680,
+        120
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "3fcb0bd9-de1f-2194-5ade-7d14b7831ebe",
+      "name": "Update Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4500,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: {\n  timestamp: new Date().toISOString(), prospect_id: i.json.prospect_id || '', workflow: 'OA-04-followups',\n  event: i.json._event || 'updated', detail: String(i.json._detail || '').slice(0, 900) } }));"
+      },
+      "id": "8e32c71d-4ad3-22cf-23cd-df57986d6300",
+      "name": "Build Event Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4720,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "f0a56b10-567c-5dcf-798c-784c47fbdb8a",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4940,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Every Hour": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Read All Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Prospects": {
+      "main": [
+        [
+          {
+            "node": "Load Events (cap)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Events (cap)": {
+      "main": [
+        [
+          {
+            "node": "Load Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Suppression": {
+      "main": [
+        [
+          {
+            "node": "Select Due Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Due Follow-ups": {
+      "main": [
+        [
+          {
+            "node": "Loop Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Follow-ups": {
+      "main": [
+        [
+          {
+            "node": "Follow-ups Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Re-read Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Prospect": {
+      "main": [
+        [
+          {
+            "node": "Status Unchanged?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Unchanged?": {
+      "main": [
+        [
+          {
+            "node": "Get Gmail Thread",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Gmail Thread": {
+      "main": [
+        [
+          {
+            "node": "Decide Next Step",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Thread Missing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Next Step": {
+      "main": [
+        [
+          {
+            "node": "Route Next Step",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini (Follow-up)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Write Follow-up",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Follow-up JSON": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Write Follow-up",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Next Step": {
+      "main": [
+        [
+          {
+            "node": "AI Write Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add Bounce to Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Write Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Prepare Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Re-read Before Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Before Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Still Due & Body OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still Due & Body OK?": {
+      "main": [
+        [
+          {
+            "node": "Reply in Thread (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reply in Thread (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Shape: Follow-up Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Follow-up Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Follow-up Message": {
+      "main": [
+        [
+          {
+            "node": "Save Follow-up to Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Follow-up to Messages": {
+      "main": [
+        [
+          {
+            "node": "Shape: Prospect Followed-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Prospect": {
+      "main": [
+        [
+          {
+            "node": "Build Event Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event Row": {
+      "main": [
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Event": {
+      "main": [
+        [
+          {
+            "node": "Loop Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Prospect Followed-up": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Follow-up Failed": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Bounce to Suppression": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Thread Missing": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REPLACE_WITH_OA99_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

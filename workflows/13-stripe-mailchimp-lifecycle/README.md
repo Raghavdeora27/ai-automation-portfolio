@@ -1,11 +1,12 @@
 # 13 — Stripe-format payment events to Mailchimp tags
 
 **Platform:** Zapier
+**Type:** single automation (plain number, no prefix)
 **Status:** ✅ Built (v1)
 
-Built in Zapier. A Stripe-format payment event hits a Catch Hook, is formatted, and goes down one of three paths to Mailchimp. The shared Zap link and a screenshot are not in this folder yet.
+Built in Zapier. A Stripe-format payment event hits a Catch Hook, is formatted, and goes down one of three paths to Mailchimp. The shared Zap link is not in this folder yet.
 
-Screenshots: coming soon.
+Screenshot: [`screenshots/zap-steps.png`](screenshots/zap-steps.png).
 Exports: coming soon.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
@@ -23,6 +24,22 @@ Someone still exports payments and pastes people into the audience, and the same
 **Who it's for:** businesses that want Mailchimp to know who paid, who paid $500 or more, and whose payment failed.
 
 **Tools:** Webhooks by Zapier, Formatter by Zapier, Mailchimp, on Zapier.
+
+## Where this is used
+
+At JobRays I run the email automations with Resend and Loops. This Zap does the same kind of job for a Stripe and Mailchimp stack. Every customer is tagged from their payment, so your Mailchimp emails can go straight to payers, high-value customers or failed payments.
+
+## Steps and skills
+
+These are the steps I built, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | **1. Catch Hook** receives the Stripe-format event | Webhooks |
+| 2 | **2. Formatter: Numbers** converts cents to a currency amount | Data formatting |
+| 3 | **3–4. Formatter: Text** cleans up and splits the name | Data cleaning |
+| 4 | **5. Paths**: high-value ($500+), regular (under $500), payment failed | Branching logic |
+| 5 | **7 / 9 / 11. Mailchimp: Add/Update Subscriber** with the path's tag | Mailchimp integration, dedupe by email |
 
 ## Business problem
 
@@ -97,13 +114,13 @@ v1 does not do these yet.
 
 ## Files
 
-Screenshots: coming soon.
+In this folder: [`screenshots/zap-steps.png`](screenshots/zap-steps.png), a screenshot of the live build.
+
 Exports: coming soon.
 
 Not in this folder yet:
 
 - Shared Zap link or Zap template.
-- Screenshot of the Zap.
 
 `sample-data/` holds three fictional Stripe-format events. They are not payments from a client.
 

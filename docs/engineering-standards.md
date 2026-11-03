@@ -1,6 +1,13 @@
 # Engineering standards
 
-These are the rules I build every workflow to. A workflow is **🗺️ Planned** while it is a design spec. A workflow is **✅ Built** when it runs on n8n, Make, or Zapier. The export, a screenshot, the fixtures from the test, and a completed checklist are added to the folder when they are ready to publish. Until those files are in the folder, the workflow README says screenshots and exports are coming soon. This repo does not invent them.
+These are the rules I build every workflow to. A workflow is **🗺️ Planned** while it is a design spec. A workflow is **🧪 Built, testing in progress** when it runs and I am working through its test checklist. A workflow is **✅ Built** when it runs on n8n, Make, or Zapier. The export, a screenshot, the fixtures from the test, and a completed checklist are added to the folder when they are ready to publish. Until those files are in the folder, the workflow README says screenshots and exports are coming soon. This repo does not invent them.
+
+## Names and prefixes
+
+- **Single automations** keep plain numbers `01`–`14`. The folder is `workflows/NN-slug/`, and the name on the canvas is `NN · Name`, for example `02 · AI lead qualification → Sheet + hot-lead alert`.
+- **Flagship systems** are multi-workflow builds under `flagships/`, and each one has a prefix: **OA** = Outreach Agent, **SA** = Support Agent, **CRM** = CRM Pipeline. Their workflows are named `<PREFIX>-NN Name`, for example `OA-01 Outreach Intake`, so they never clash with the plain numbers. `-99` is always that system's own error handler, for example `OA-99 Error Handler`.
+- **Shared** marks a small utility that more than one workflow uses, named `Shared · <name>`, for example `Shared · Error Alert` (it was `00 · Error Alert`).
+- The name inside an export (n8n workflow name, Make scenario name, or Zap title) matches the name in this repo.
 
 n8n, Make, and Zapier are the platforms used in the catalog. Each one follows the same rules: a signed trigger where the app provides one, a stored idempotency key, capped retries, and a call to the ops monitoring workflow when a run fails.
 
@@ -64,7 +71,7 @@ n8n workflows use an explicit retry counter and a Wait node so the attempt numbe
 
 ## Central error workflow
 
-[Workflow 07, ops monitoring](../workflows/07-ops-monitoring/), is the error workflow for the catalog.
+Today the n8n single automations use `Shared · Error Alert` (in my n8n account; export not in this repo yet) as their Error Workflow, and the OA flagship uses its own `OA-99 Error Handler`, which also writes to the OA Errors tab. [Workflow 07, ops monitoring](../workflows/07-ops-monitoring/), is the planned full error workflow for the catalog. The rules below describe that full version.
 
 Every workflow sends a normalized event when a run fails, and a short run event when a run finishes. Make and Zapier cannot use n8n's internal error trigger, so those workflows POST to the ops webhook. n8n workflows also set workflow 07 as their Error Workflow, which catches a crash that never reaches the HTTP node.
 

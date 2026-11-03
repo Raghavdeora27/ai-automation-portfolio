@@ -1,6 +1,7 @@
 # 07 — Ops monitoring
 
 **Platform:** n8n
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,23 @@ Automations fail quietly inside whichever tool ran them, and you usually find ou
 **Who it's for:** anyone running more than a couple of automations who'd like to sleep well.
 
 **Tools:** Slack, Supabase, on n8n (Make and Zapier workflows report here too).
+
+## Where this is used
+
+At BlueBox I ran operations automation across Flokzu, ClickUp and Zoho, so I know how much a team relies on those flows quietly working. Today my single n8n automations already send their failures to `Shared · Error Alert`. This workflow is the fuller version: one alert channel and one daily digest for every automation.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Accept failure and run events from n8n, Make and Zapier (shared-secret header) | Webhook security, cross-platform design |
+| 2 | Post failures to one Slack channel | Slack alerting |
+| 3 | Store the run history in Supabase | Logging, Postgres |
+| 4 | Send a weekday digest of runs, failures and items waiting on a person | Scheduled reporting |
+
+Today, the small built version of this is [`Shared · Error Alert`](../../docs/engineering-standards.md#central-error-workflow).
 
 ## Business problem
 

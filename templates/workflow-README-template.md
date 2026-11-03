@@ -1,8 +1,9 @@
 # NN — Workflow name
 
-Author note, delete after copying: point the standards link at `../../docs/engineering-standards.md`. The link below is correct for `templates/`.
+Author note, delete after copying: point the standards link at `../../docs/engineering-standards.md`. The link below is correct for `templates/`. This template is for single automations in `workflows/NN-slug/`. A flagship workflow is documented in its flagship's README instead, and named `<PREFIX>-NN Name` (see Names and prefixes in the engineering standards).
 
 **Platform:** n8n, Make, or Zapier
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,15 @@ Standards: [../docs/engineering-standards.md](../docs/engineering-standards.md)
 
 **Who it's for:** [the team or business.]
 **Tools:** [plain names], on n8n, Make, or Zapier.
+
+## Steps and skills
+
+One row per node or module, in order, with the skill it shows. A client should see the whole build and its value at a glance.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | [Step, naming the node or module] | [Skill] |
+| 2 | [Step] | [Skill] |
 
 ## Business problem
 

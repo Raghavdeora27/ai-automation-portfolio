@@ -1,6 +1,7 @@
 # 05 — Failed-payment recovery
 
 **Platform:** n8n
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -21,6 +22,23 @@ A failed card needs more than a tag on a mailing list. A reminder that arrives a
 **Who it's for:** businesses that bill through Stripe and cannot afford to lose a failed payment in a tag.
 
 **Tools:** Stripe, Resend, WhatsApp or SMS, Slack, on n8n.
+
+## Where this is used
+
+A scenario: a membership or subscription business on Stripe, such as a gym or an online course. When a card fails, the customer gets a polite reminder with the card-update link right away, and the reminders stop the moment they pay.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Verify the Stripe `invoice.payment_failed` event | Webhook security |
+| 2 | Open one recovery sequence per invoice | Idempotency, state tracking |
+| 3 | Time reminders around Stripe's own retry schedule | Scheduling logic |
+| 4 | Send email, then WhatsApp or SMS reminders with a card-update link | Multi-channel messaging |
+| 5 | Escalate high-value accounts to a person in Slack | Human handoff |
+| 6 | Stop on payment and log recovered invoices | Outcome logging |
 
 ## Business problem
 

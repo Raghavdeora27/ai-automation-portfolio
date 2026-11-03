@@ -1,14 +1,15 @@
 # 09 — Lead follow-up from a Google Sheets Lead Log
 
 **Platform:** Make
+**Type:** single automation (plain number, no prefix)
 **Status:** ✅ Built (v1)
 
-Built in Make. The scenario is named `09 · Lead follow-up (Make)`. Once a day it reads the Lead Log, emails the leads that still need a follow-up, and writes the row back. The blueprint and the canvas screenshot are not in this folder yet.
+Built in Make. The scenario is named `09 · Lead follow-up (Make)`. Once a day it reads the Lead Log, emails the leads that still need a follow-up, and writes the row back. The blueprint is not in this folder yet.
 
-Screenshots: coming soon.
+Screenshot: [`screenshots/canvas.png`](screenshots/canvas.png).
 Exports: coming soon.
 
-The folder slug stays `09-form-lead-enrichment` so existing links keep working.
+The folder slug stays `09-form-lead-enrichment` so existing links keep working. The name comes from an earlier plan. What's built is the basic Sheet lead follow-up in Make described here. It doesn't take form leads or enrich them.
 
 Standards: [../../docs/engineering-standards.md](../../docs/engineering-standards.md)
 
@@ -25,6 +26,25 @@ Leads sit in a log until someone remembers who was written to, and when.
 **Who it's for:** small teams who already keep leads in Google Sheets.
 
 **Tools:** Google Sheets, Gmail, on Make.
+
+## Where this is used
+
+At Careernet and DataisGood I ran candidate pipelines and outreach, where much of the work was following up on time. This scenario does that follow-up straight from the sheet you already keep, so no lead goes quiet after the first contact.
+
+## Steps and skills
+
+These are the steps I built, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | **Schedule** runs daily at 10:00 | Make scheduling |
+| 2 | **(1) Google Sheets: Search Rows** reads the Lead Log | Google Sheets integration |
+| 3 | **(5) Tools: Set variables** prepares values | Data mapping |
+| 4 | **Filter: Not Hot + 2 days** keeps only the leads due | Make filters, date logic |
+| 5 | **(3) Gmail: Send an email** sends the follow-up | Gmail automation |
+| 6 | **(4) Google Sheets: Update a Row** writes the status back | Write-back, record keeping |
+
+The planned [CRM (CRM Pipeline)](../../flagships/crm-pipeline/) flagship takes this further, into HubSpot.
 
 ## Business problem
 
@@ -69,13 +89,13 @@ v1 does not do these yet.
 
 ## Files
 
-Screenshots: coming soon.
+In this folder: [`screenshots/canvas.png`](screenshots/canvas.png), a screenshot of the live build.
+
 Exports: coming soon.
 
 Not in this folder yet:
 
 - Make blueprint.
-- Screenshot of the scenario.
 
 `sample-data/` holds one fictional Lead Log row so the idea can be reviewed. It is not an export from a live sheet and it is not a client lead.
 

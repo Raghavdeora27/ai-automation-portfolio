@@ -1,155 +1,153 @@
 # AI Automation Portfolio
 
-Hi, I'm Raghav Deora. I build AI products and automations that take repetitive work off your team's plate: invoicing, lead follow-up, support replies, approvals, and onboarding. You get the hours back. Invoices go out the moment a payment lands, leads stop slipping through the cracks, retyping errors disappear, and a person still signs off on the decisions that matter.
+Hi, I'm Raghav Deora. I build AI agents and automations on n8n, Make and Zapier that take repetitive work off your team's plate: cold outreach, lead follow-up, invoicing, support replies, approvals and onboarding. You get the hours back. Invoices go out the moment a payment lands, leads stop slipping through the cracks, the same person or invoice never goes in twice, every action leaves an audit trail, and a person still signs off on the decisions that matter.
 
-### I built this for my own business first
+### Built and run in my own product
 
-I founded [JobRays](https://jobrays.io), an AI career companion that turns a long-term career goal into a daily plan someone can actually follow. Under the hood, it's a set of connected AI engines that work as one system:
-
-- **Personalised plans.** Engines that map a user's goal into the job roles to target, the skills, courses, and projects for each milestone, and the full journey from today to the goal.
-- **Daily progress tracking.** A tracker that logs what each user does every day and feeds it back, so every plan adjusts to real progress instead of going stale.
-- **Ray, the AI companion.** A chat assistant that knows each user's plan and progress, and routes each task across OpenAI, Gemini, and Claude to balance quality and cost.
-- **The business machinery.** Razorpay payments that become GST invoices in Zoho Books (including international transactions), transactional emails through Resend, and lifecycle journeys in Loops triggered by what users actually do.
-
-I built the product (Next.js, FastAPI, and Supabase on Vercel) and every integration around it. So when I build a workflow for you, it's the same kind of system I trust with my own users and revenue.
+I founded [JobRays](https://jobrays.io), an AI career companion. It launched around June 2026 as a global product. I built it myself with Next.js, FastAPI and Supabase, hosted on Vercel: the engines, the backend and frontend, and Ray, its AI career companion chatbot. The business runs on the same kind of automations I build for clients: Razorpay payments, Zoho Books invoicing and bookkeeping (including international transactions), and email automations with Resend and Loops.
 
 ### Process first, then automation
 
-Before JobRays, I spent years in operations. As Operations Manager at BlueBox, I used Lean Six Sigma to cut process variability by 25% before we automated anything. As a consultant at Careernet, I guided 6,000+ candidates from interview to onboarding. I'm Lean Six Sigma certified, and I always fix the process before I automate it, because automating a messy handoff just delivers the mess faster.
+Before JobRays, I spent 5+ years in operations and recruitment. As Ops Manager at BlueBox Singapore (until January 2025), I used Lean Six Sigma to cut process variability by 25% before automating anything. Then I saved about 500 hours a year through automation with Flokzu, ClickUp and Zoho. Earlier, I was Outreach Manager at DataisGood (2023–24) and a Consultant at Careernet (2021–23), where I guided 6,000+ candidates from interview to onboarding. I have an MBA and I'm Lean Six Sigma certified. I always fix the process before I automate it, because automating a messy handoff just delivers the mess faster.
 
 ### Built for a real week, not a demo
 
 A slow API gets retried. A stored ID stops a second invoice, lead, or email from going out. A person approves the steps that should stay human. If something fails, you hear about it before your customer does.
 
-### Your stack, not mine
-
-I work on n8n, Make, and Zapier, with Stripe, HubSpot, QuickBooks, Xero, Slack, Gmail, Google Sheets, Mailchimp, OpenAI, Google Gemini, and Claude. For clients in India and the GCC, I also connect Razorpay and Zoho. Where a Zap should start from an HTTP payload, I use Webhooks by Zapier.
-
-**What you'll find here:** 14 workflows, each with the business problem, the flow, the error handling, and sample data. Three of them are built. The rest are planned to the same standard. I add the working export and a demo video as each one is ready to publish here.
+**What you'll find here:** 3 flagship systems (multi-workflow builds, each with a prefix) and 14 single automations (plain numbers 01–14). Every build here runs on test accounts with fictional sample data. There are no client names or client results in this repo. I add the working export and a demo video as each one is ready to publish.
 
 📅 [Book a call](https://calendar.app.google/xPLZuaDusXaS93v17) to talk through your workflow.
 
-## Catalog
+## Prefix key
 
-Fourteen workflows, grouped by platform. Pick the one that takes a job off your plate.
+Every workflow name in this repo and in my n8n, Make and Zapier accounts starts with one of these, so you can tell at a glance which system it belongs to. Flagship workflows use a prefix (`OA-01 …`); single automations keep their plain number (`02 · …`), so the two never clash.
 
-### n8n
+| Prefix | Stands for | What it is |
+| --- | --- | --- |
+| **OA** | Outreach Agent | Flagship system on n8n. AI prospect research, personalised cold email I approve, follow-ups and reply handling. Workflows OA-00 to OA-06, plus OA-99. |
+| **SA** | Support Agent | Flagship system on n8n. AI inbox triage, answers from your docs, and escalation to a person. Planned. |
+| **CRM** | CRM Pipeline | Flagship system on Make + HubSpot. A lead-to-deal pipeline. Planned. |
+| **Shared** | Shared utilities | Small helpers that several workflows use, such as `Shared · Error Alert` (it was `00 · Error Alert`). They live in my n8n account; exports to come. |
+| **01–14** | Single automations | One focused workflow each, numbered 01 to 14, on n8n, Make or Zapier. |
 
-| # | Workflow | Platform | Tools | Business problem | Status |
-| --- | --- | --- | --- | --- | --- |
-| 01 | [Razorpay payment to Zoho Books GST invoice and Resend receipt](workflows/01-razorpay-zoho-books-invoicing/) | n8n | Razorpay, Zoho Books, Resend | A captured payment should produce one GST invoice and one receipt email. | 🗺️ Planned |
-| 02 | [AI lead qualification to Sheet and hot-lead alert](workflows/02-ai-email-triage-crm/) | n8n | n8n Form, Google Gemini, Google Sheets, Gmail | A form lead should be scored, logged to a sheet, and emailed: the owner when the lead is hot, the lead when it is not. | ✅ Built (v1) |
-| 03 | [RAG support agent](workflows/03-rag-support-agent/) | n8n | Supabase pgvector, OpenAI or Claude, Slack | Support answers should come from company documents, with a person taking over in Slack when the docs are not enough. | 🗺️ Planned |
-| 04 | [Stripe payment to QuickBooks invoice and Resend receipt](workflows/04-stripe-quickbooks-invoicing/) | n8n | Stripe, QuickBooks Online, Resend, Slack | A paid Stripe Checkout should produce one QuickBooks invoice and one receipt email. | 🗺️ Planned |
-| 05 | [Failed-payment recovery](workflows/05-failed-payment-recovery/) | n8n | Stripe, Resend, WhatsApp or SMS, Slack | A failed payment should start a recovery sequence. Workflow 13 only tags the contact in Mailchimp. | 🗺️ Planned |
-| 06 | [Meeting notes to CRM](workflows/06-meeting-notes-crm/) | n8n | OpenAI, Zoho CRM, Slack | A call transcript should become a Zoho CRM note and a task only where the transcript states an action. | 🗺️ Planned |
-| 07 | [Ops monitoring](workflows/07-ops-monitoring/) | n8n | Slack, Supabase | Every workflow should report failures to Slack, with the run history stored in Supabase. | 🗺️ Planned |
-| 08 | [Voice AI agent to CRM](workflows/08-voice-ai-agent-crm/) | n8n | VAPI, OpenAI, HubSpot, Slack | A finished voice call should become a HubSpot contact and a follow-up task when the caller asked for one. | 🗺️ Planned |
-
-### Make
-
-| # | Workflow | Platform | Tools | Business problem | Status |
-| --- | --- | --- | --- | --- | --- |
-| 09 | [Lead follow-up from a Google Sheets Lead Log](workflows/09-form-lead-enrichment/) | Make | Google Sheets, Gmail | A Lead Log row that is not hot, and that has not been contacted for at least 2 days, should get a Gmail follow-up, and the sheet should get the status back. | ✅ Built (v1) |
-| 10 | [WhatsApp lead qualifier](workflows/10-whatsapp-lead-qualifier/) | Make | WhatsApp Business Cloud API, OpenAI, HubSpot, Slack | A WhatsApp enquiry should answer a few qualifying questions, get a score, and land in HubSpot. | 🗺️ Planned |
-| 11 | [Accounts payable with human approval](workflows/11-accounts-payable-automation/) | Make | OpenAI, QuickBooks or Xero, Slack | A vendor bill received by email should wait for Slack approval before it is created in QuickBooks or Xero. | 🗺️ Planned |
-| 12 | [HR onboarding](workflows/12-hr-onboarding/) | Make | Google Workspace, ClickUp, Slack | A new-hire form should open the Workspace account and the ClickUp checklist, then remind the manager until the checklist is done. | 🗺️ Planned |
-
-### Zapier
-
-| # | Workflow | Platform | Tools | Business problem | Status |
-| --- | --- | --- | --- | --- | --- |
-| 13 | [Stripe-format payment events to Mailchimp tags](workflows/13-stripe-mailchimp-lifecycle/) | Zapier | Webhooks by Zapier, Formatter by Zapier, Mailchimp | A Stripe-format payment should add or update one Mailchimp subscriber: `high-value` at $500 or more, `paid-customer` under $500, or `payment-failed`. | ✅ Built (v1) |
-| 14 | [Content repurposing](workflows/14-content-repurposing/) | Zapier | OpenAI, Notion, Slack | A blog URL should become drafts stored in Notion that wait for Slack approval. | 🗺️ Planned |
-
-## Flagship builds (coming soon)
-
-Two larger end-to-end production builds, with full blueprints, are in progress.
-
-## How every workflow is built
-
-I build every workflow to the same standard, so your team can trust it on a busy day. The full rules, tables, and test checklist are in [docs/engineering-standards.md](docs/engineering-standards.md).
-
-- Signed webhooks are verified before any write. App triggers that have no signature use the client's connection, or a shared secret.
-- A stable provider id is stored so a retry does not create a second invoice, lead, task, or email.
-- Transient API failures retry with backoff. Permanent errors stop and alert.
-- Exhausted failures go to [ops monitoring](workflows/07-ops-monitoring/) for a Slack alert. The run history is in Supabase.
-- Credentials live in n8n, Make, or Zapier. Sample files use placeholders and fictional payloads. `dry_run` defaults to true.
-- Each folder ships with a test checklist that I run before anything goes live.
-
-## How to import a workflow
-
-The exports are not in the folders yet. When a folder contains an export or a shared Zap link, import it as follows.
-
-### n8n
-
-1. Open the n8n instance.
-2. Go to **Workflows**.
-3. Choose **Import from File**.
-4. Select the workflow JSON in that folder.
-5. Reconnect each credential in the n8n credential store. Use the credential names in the workflow README.
-6. Fill the config variables in that README, and leave `dry_run` on for the first test.
-7. Run the folder's test checklist against `sample-data/` before activating the workflow.
-
-### Make
-
-1. Create a scenario, or open an empty one.
-2. Open the scenario menu.
-3. Choose **Import Blueprint**.
-4. Select the blueprint JSON in that folder.
-5. Map every module to a connection in the client's Make account.
-6. Fill the scenario variables listed in the workflow README.
-7. Run once with the sample payload before turning the scenario on.
-
-### Zapier
-
-Zapier does not import a JSON file the way n8n and Make do. Workflows 13 and 14 ship as a shared Zap link or a Zap template, or they are rebuilt from the folder README. No shared link is in those folders yet.
-
-When a folder contains a shared link or a template URL:
-
-1. Open the shared Zap link or the template URL named in that workflow's README.
-2. Choose **Try this Zap** and select the client's Zapier account.
-3. Reconnect each app. Use the credential names in the workflow README. Zapier stores the secrets in the client's connections.
-4. Fill the input fields listed in that README, including the Storage by Zapier key prefix, and leave `dry_run` on for the first test.
-5. Leave the Zap off until the folder's test checklist has been run against `sample-data/`.
-
-When the folder has no shared link yet, rebuild the Zap from the README:
-
-1. Create a Zap in the client's account and leave it off.
-2. Set the trigger named in that workflow's README. Workflow 13 uses Webhooks by Zapier Catch Hook and receives Stripe-format payloads there. A Catch Hook that stands in for a signed app still verifies the signature before any write, which is how workflows 04 and 05 are designed. Slack's own connection holds the Slack signing secret.
-3. Add each action in the flow order: the allowlist filter, the Storage by Zapier idempotency key, the app actions, and the ops webhook step on the error path.
-4. Map fields from the sample payload in `sample-data/`.
-5. Run a test with that sample and `dry_run` on. Turn the Zap on only after the checklist passes.
-
-## Repository structure
+Where things live:
 
 ```text
 .
 ├── README.md
 ├── LICENSE
 ├── .gitignore
+├── flagships/                 Multi-workflow systems, one folder per prefix
+│   ├── outreach-agent/        OA: 8 n8n workflows, setup guide, sheet template, validator
+│   ├── support-agent/         SA: design (planned)
+│   └── crm-pipeline/          CRM: design (planned)
+├── workflows/                 Single automations 01–14 (unchanged folders)
+│   ├── 01-razorpay-zoho-books-invoicing/
+│   ├── …
+│   └── 14-content-repurposing/
 ├── docs/
-│   └── engineering-standards.md
-├── templates/
-│   └── workflow-README-template.md
-└── workflows/
-    ├── 01-razorpay-zoho-books-invoicing/
-    ├── 02-ai-email-triage-crm/
-    ├── 03-rag-support-agent/
-    ├── 04-stripe-quickbooks-invoicing/
-    ├── 05-failed-payment-recovery/
-    ├── 06-meeting-notes-crm/
-    ├── 07-ops-monitoring/
-    ├── 08-voice-ai-agent-crm/
-    ├── 09-form-lead-enrichment/
-    ├── 10-whatsapp-lead-qualifier/
-    ├── 11-accounts-payable-automation/
-    ├── 12-hr-onboarding/
-    ├── 13-stripe-mailchimp-lifecycle/
-    └── 14-content-repurposing/
+│   ├── engineering-standards.md
+│   └── importing.md
+└── templates/
+    └── workflow-README-template.md
 ```
 
-Each workflow folder holds a design spec (`README.md`) and a `sample-data/` directory of fictional payloads. The workflow export and a canvas screenshot are added when that workflow is built.
+Each single-automation folder holds a spec (`README.md`) and a `sample-data/` directory of fictional payloads. The export and a canvas screenshot are added when that workflow is built. `Shared` utilities live in my n8n account; their exports will go in a `shared/` folder when I add them.
+
+## Flagship systems
+
+### OA: Outreach Agent (n8n)
+
+**Business outcome:** cold outreach that runs every day without becoming a full-time job. I built it so every prospect gets a first email based on research of their own website, and nothing goes out until I approve it. Follow-ups always happen. A reply stops the sequence. Unsubscribes and bounces are suppressed automatically. The same prospect can never be added twice, and every decision is logged.
+
+**How it works.** Eight n8n workflows share one Google Sheet, which acts as the CRM. The status column is the queue between them.
+
+| Workflow | What it does |
+| --- | --- |
+| OA-00 Form Intake | A simple form to add one prospect by hand. It passes the prospect to OA-01. |
+| OA-01 Outreach Intake | Takes prospects from the form, a secured webhook, or rows pasted into the sheet. It cleans and validates them, removes duplicates by email and by domain, checks the suppression list, and logs every decision to an Events tab. |
+| OA-02 Research & Draft | Fetches each prospect's website. A Gemini agent judges fit and writes a short personal email, and a quality score gates weak drafts. |
+| OA-03 Approval & Send | Sends me each draft in Gmail to approve, edit or reject. Approved emails go out only inside the prospect's business hours, under a daily cap, and after a last suppression check. |
+| OA-04 Follow-ups | Sends up to two short follow-ups in the same Gmail thread, and stops the moment the prospect replies. |
+| OA-05 Inbox Agent | Reads replies and sorts them: interested, question, objection, not now, unsubscribe, out of office or bounce. It suggests a reply for me to approve, or handles the reply itself (suppress, snooze, reschedule). |
+| OA-06 Weekly Report | Emails me a Monday summary: sent, replies, reply rate and bounces, plus a short AI insight. |
+| OA-99 Error Handler | Any failure in OA-00 to OA-06 sends me an alert email and adds a row to the Errors tab. |
+
+**Where this is used:** I ran outreach and candidate pipelines by hand as Outreach Manager at DataisGood and at Careernet. OA is how I'd run that work now: the research and drafts are automatic, I approve every email, and no follow-up is missed.
+
+**Skills shown:** n8n multi-workflow design, AI agents with tools and structured output (Gemini), web research, human-in-the-loop approval in Gmail, dedupe and suppression logic, timezone-aware send windows, rate caps, retries, a central error workflow, secret-checked webhooks that fail closed, an audit log, and an offline validator for the workflow JSON.
+
+**Status:** 🧪 Built, testing in progress.
+- Tested in OA-01: adding a prospect through the form, rejecting a duplicate form entry, writing to the Events audit log, and sheet import (a new row is added and a duplicate is rejected).
+- The webhook path is built, and I'll test it once its secret is set up.
+- OA-02 to OA-06 are not tested yet.
+
+→ [flagships/outreach-agent/](flagships/outreach-agent/)
+
+### SA: Support Agent (n8n)
+
+**Business outcome:** routine support emails get a fast, correct answer, and the tricky ones reach a person with the context already gathered. The AI answers only from your own help docs. When it isn't sure, it hands the email over instead of guessing.
+
+**How it works (planned design).** New support emails are triaged by an AI classifier: question, billing, bug, urgent or spam. Answers are drafted from your knowledge base, and low-risk replies can go out after approval. Anything sensitive, urgent or weakly matched is escalated to a person with a summary. Every ticket is logged with its category and outcome.
+
+**Where this is used:** I built Ray, the AI career companion chatbot inside JobRays, so I've already shipped an AI assistant that answers users in a live product. SA brings that to a support inbox, answering only from your own docs.
+
+**Skills shown:** AI triage with a fixed schema, retrieval from your docs (RAG), confidence-based escalation, human approval, and an outcome log.
+
+**Status:** 🗺️ Planned. → [flagships/support-agent/](flagships/support-agent/)
+
+### CRM: CRM Pipeline (Make + HubSpot)
+
+**Business outcome:** every new lead becomes one clean HubSpot contact and deal, with an owner and a next task, so no lead sits untouched and no contact is duplicated.
+
+**How it works (planned design).** Leads come in from forms and email. Make finds the existing contact in HubSpot or creates one. It qualifies the lead, creates the deal at the right stage, assigns an owner and adds a follow-up task. Stage changes trigger the next step, and a weekly pipeline summary goes to the owner.
+
+**Where this is used:** A scenario: a B2B services team that gets leads from web forms and WhatsApp. Every lead lands in HubSpot as one deal with an owner and a next task, so nobody has to chase the spreadsheet. It builds on singles [09](workflows/09-form-lead-enrichment/) and [10](workflows/10-whatsapp-lead-qualifier/).
+
+**Skills shown:** Make scenario design, HubSpot data modelling (contacts, deals, stages, tasks), dedupe, routing rules, error routes, and reporting.
+
+**Status:** 🗺️ Planned. → [flagships/crm-pipeline/](flagships/crm-pipeline/)
+
+## Single automations
+
+| No. | Tool | What it does for the client | Status | Link |
+| --- | --- | --- | --- | --- |
+| 01 | n8n | Each captured Razorpay payment becomes a Zoho Books invoice that's emailed to the customer, and the owner gets an alert. No retyping. A fuller version runs at JobRays. | ✅ Built | [01](workflows/01-razorpay-zoho-books-invoicing/) |
+| 02 | n8n | Scores every form lead with AI and logs it to a sheet. Hot leads alert the owner right away, and everyone else gets a thank-you with next steps. | ✅ Built (v1) | [02](workflows/02-ai-email-triage-crm/) |
+| 03 | n8n | Answers support questions from your own docs only, and hands anything uncertain to a teammate in Slack. | 🗺️ Planned | [03](workflows/03-rag-support-agent/) |
+| 04 | n8n | Each paid Stripe Checkout becomes one QuickBooks invoice and one receipt, with no duplicates on retries. | 🗺️ Planned | [04](workflows/04-stripe-quickbooks-invoicing/) |
+| 05 | n8n | Starts a polite recovery sequence when a payment fails, so less revenue slips away unnoticed. | 🗺️ Planned | [05](workflows/05-failed-payment-recovery/) |
+| 06 | n8n | Turns a call transcript into a short Zoho CRM note, and creates tasks only for what was actually agreed. | 🗺️ Planned | [06](workflows/06-meeting-notes-crm/) |
+| 07 | n8n | Sends every workflow failure to one Slack channel, plus a weekday digest, so you hear about problems before customers do. | 🗺️ Planned | [07](workflows/07-ops-monitoring/) |
+| 08 | n8n | Turns each finished voice-AI call into a HubSpot contact, with a follow-up task when the caller asked for one. | 🗺️ Planned | [08](workflows/08-voice-ai-agent-crm/) |
+| 09 | Make | Every morning, finds leads in the sheet that haven't heard back in 2+ days, emails them, and records the follow-up. | ✅ Built (v1) | [09](workflows/09-form-lead-enrichment/) |
+| 10 | Make | Qualifies WhatsApp enquiries with three questions, saves each one in HubSpot, and sends good leads your booking link. | 🗺️ Planned | [10](workflows/10-whatsapp-lead-qualifier/) |
+| 11 | Make | Reads vendor bills from email, asks for your one-click approval in Slack, then books them in QuickBooks or Xero. | 🗺️ Planned | [11](workflows/11-accounts-payable-automation/) |
+| 12 | Make | Sets up a new hire's Google Workspace account, ClickUp checklist and welcome email, then reminds the manager until the checklist is done. | 🗺️ Planned | [12](workflows/12-hr-onboarding/) |
+| 13 | Zapier | Tags each customer in Mailchimp from their payment (`high-value`, `paid-customer` or `payment-failed`) without creating duplicate contacts. | ✅ Built (v1) | [13](workflows/13-stripe-mailchimp-lifecycle/) |
+| 14 | Zapier | Turns a published article into LinkedIn and X drafts that wait in Notion for your approval in Slack. | 🗺️ Planned | [14](workflows/14-content-repurposing/) |
+
+**Status key:** ✅ Built means it runs on the platform. 🧪 means built, with testing in progress. 🗺️ Planned means a full design spec (flow, failure cases and test checklist), with the build still to come. I add exports and screenshots to each folder as they're ready.
+
+## Skills and stack
+
+### Your stack, not mine
+
+I work on n8n (including its AI agent nodes), Make, and Zapier, with Stripe, HubSpot, QuickBooks, Xero, Slack, Gmail, Google Sheets, Mailchimp, Notion, ClickUp, WhatsApp Business, OpenAI, Google Gemini, and Claude. For clients in India and the GCC, I also connect Razorpay and Zoho. Where a Zap should start from an HTTP payload, I use Webhooks by Zapier.
+
+### How every workflow is built
+
+I build every workflow to the same standard, so your team can trust it on a busy day. The full rules, naming, tables, and test checklist are in [docs/engineering-standards.md](docs/engineering-standards.md).
+
+- Signed webhooks are verified before any write. App triggers that have no signature use the client's connection, or a shared secret that fails closed.
+- A stable ID or dedupe check stops a second invoice, lead, task, or email.
+- Transient API failures retry with backoff. Permanent errors stop and alert me.
+- Every run and decision is logged, so there's an audit trail.
+- AI steps use a fixed output schema, and a person approves the risky ones.
+- Credentials live in n8n, Make, or Zapier. Sample files use placeholders and fictional payloads.
+- Each folder ships with a test checklist that I run before anything goes live.
+
+To import a workflow into your own account, see [docs/importing.md](docs/importing.md).
 
 ## Contact
 

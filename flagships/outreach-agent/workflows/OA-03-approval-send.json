@@ -1,0 +1,1943 @@
+{
+  "name": "OA-03 Approval & Send",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## A. Human approval (every 5 min, one draft per run)\nGmail **Send and Wait** can only hold one approval per execution, so each run takes **one** `drafted` prospect:\n1. Re-read → still `drafted`? → load its draft from **Messages**\n2. Mark `pending_approval` (so the next run will not pick it again)\n3. Email APPROVER_EMAIL a form: **Approve as written / Approve with my edits / Reject** (+ edited subject/body)\n4. Re-read → still `pending_approval`? → set `approved` / `rejected` / `approval_expired` (no answer in 48 h)\n\nApproving does **not** send - sending happens in lane B, inside the send window.",
+        "height": 360,
+        "width": 760,
+        "color": 4
+      },
+      "id": "4cb3cdaf-25ea-cdbc-fb9c-23f56bb6d656",
+      "name": "Note: A. Human approval (every 5 min, one draft per run)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -560
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## B. Sending (every 15 min)\nTakes `approved` prospects and sends **only** when:\n- local time in the **prospect's timezone** is Mon-Fri 09:00-17:00 (otherwise it stays `approved` and is retried next run)\n- today's sends (Events `sent` + `followup_sent` + `reply_sent`) are under **DAILY_CAP**\n- the email/domain is **not** on Suppression (re-checked right before sending)\n\nThen Gmail send → store thread_id + last_message_id → `sent`, next_followup_at = +3 business days.",
+        "height": 300,
+        "width": 760,
+        "color": 5
+      },
+      "id": "4249f116-a6f5-9e8c-3316-bb5f37d868dd",
+      "name": "Note: B. Sending (every 15 min)",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "e207f4e6-2e0b-fdbd-458c-bb8bc9f0f68b",
+      "name": "Every 5 min: Request Approval",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "13dfb89e-cf47-bead-f519-e66de8150d5e",
+      "name": "Every 15 min: Send Approved",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa4b1531-3478-7007-9ec0-37913fca2399",
+              "name": "SHEET_ID",
+              "value": "YOUR_GOOGLE_SHEET_ID",
+              "type": "string"
+            },
+            {
+              "id": "a539063e-4ac9-3c65-1177-7cd1f8e73f3f",
+              "name": "SENDER_NAME",
+              "value": "Raghav",
+              "type": "string"
+            },
+            {
+              "id": "730721de-9996-416e-6a0f-e91f20f39f14",
+              "name": "SENDER_EMAIL",
+              "value": "you@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "f383965c-2915-5191-66c7-de99120b89ee",
+              "name": "APPROVER_EMAIL",
+              "value": "approver@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "812cdcf7-7558-89f2-549f-c25e19cc61ea",
+              "name": "ALERT_EMAIL",
+              "value": "alerts@yourdomain.com",
+              "type": "string"
+            },
+            {
+              "id": "7360d641-ffc4-fdb8-6599-c8a924007693",
+              "name": "DAILY_CAP",
+              "value": 30,
+              "type": "number"
+            },
+            {
+              "id": "79eba11d-9ec0-5905-96a9-177318767719",
+              "name": "DEFAULT_TIMEZONE",
+              "value": "Asia/Kolkata",
+              "type": "string"
+            },
+            {
+              "id": "5558d350-d95a-0643-ab8a-ba1c709330ec",
+              "name": "SEND_WINDOW_START_HOUR",
+              "value": 9,
+              "type": "number"
+            },
+            {
+              "id": "abb02274-4e26-1ee0-2228-b218212a6cb9",
+              "name": "SEND_WINDOW_END_HOUR",
+              "value": 17,
+              "type": "number"
+            },
+            {
+              "id": "e5323302-00d0-ca13-a6b9-f37f1321ebc6",
+              "name": "IGNORE_SEND_WINDOW",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "64fb83b0-1393-6460-7093-4d95374d6659",
+              "name": "FOLLOWUP_1_DELAY_BUSINESS_DAYS",
+              "value": 3,
+              "type": "number"
+            },
+            {
+              "id": "3d7ad95c-40b0-5560-becf-24cd5427308c",
+              "name": "FOLLOWUP_2_DELAY_BUSINESS_DAYS",
+              "value": 4,
+              "type": "number"
+            },
+            {
+              "id": "c667b6ff-1151-a67e-33cc-9fda79a21f4e",
+              "name": "TEST_FOLLOWUP_DELAY_MINUTES",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "5ad98d79-18e7-21f6-ad5f-f8e534cffa47",
+              "name": "MY_SERVICE_ONE_LINER",
+              "value": "I build small automations that take repetitive admin (follow-ups, bookings, data entry) off a business owner's plate.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7807816b-41f0-3b3c-6226-0802d87d831f",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cc5ec190-7830-6726-5151-46cc133a29a8",
+              "leftValue": "={{ Boolean($('Every 5 min: Request Approval').isExecuted) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "cc5ec190-7830-6726-5151-46cc133a29a8",
+      "name": "Approval Lane?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "drafted"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "9e12781a-804e-290a-a0b7-ce0c0cb3ec62",
+      "name": "Read Drafted Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        -40
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "maxItems": 1
+      },
+      "id": "19979c63-60b9-babd-69fa-e0628453ecbd",
+      "name": "Take One",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "0f4f4fe9-8449-eb94-cf25-3c6b615a0afd",
+      "name": "Re-read Drafted Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        -40
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b6e61c8d-11dd-a661-1f75-9ec5a69e3551",
+              "leftValue": "={{ Boolean($json.status === 'drafted') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "b6e61c8d-11dd-a661-1f75-9ec5a69e3551",
+      "name": "Still drafted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1340,
+        -40
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Re-read Drafted Row').first().json.prospect_id }}"
+            },
+            {
+              "lookupColumn": "status",
+              "lookupValue": "draft"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "3f088ce2-d249-1f45-1a35-8e374d51cee4",
+      "name": "Load Draft Message",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1560,
+        -100
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json).filter(r => r && r.message_key && r.kind === 'initial');\nconst p = $('Re-read Drafted Row').first().json;\nconst msg = rows.length ? rows[rows.length - 1] : null;\nconst esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst html = msg ? `<p><b>To:</b> ${esc(p.first_name)} ${esc(p.last_name)} &lt;${esc(p.email)}&gt; - ${esc(p.company)} (${esc(p.website)})<br>\n<b>Prospect timezone:</b> ${esc(p.timezone)}<br><b>Why it fits:</b> ${esc(p.fit_reason)}<br><b>Observation used:</b> ${esc(p.observation)}<br>\n<b>Quality score:</b> ${esc(msg.quality_score)}/10</p><hr><p><b>Subject:</b> ${esc(msg.subject)}</p><p>${esc(msg.body).replace(/\\n/g, '<br>')}</p><hr>\n<p>To edit: choose \"Approve with my edits below\" and paste the corrected subject and/or body. Blank edit fields keep the original.</p>` : '';\nreturn [{ json: { found: !!msg, prospect_id: p.prospect_id, message_key: msg ? msg.message_key : '', approval_html: html,\n  subject: msg ? msg.subject : '', body: msg ? msg.body : '' } }];"
+      },
+      "id": "b32f0090-37e4-1cac-0a12-0eaa77efa59e",
+      "name": "Pick Latest Draft",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "6829e037-821b-29ac-46f8-2ec3f69a3297",
+              "leftValue": "={{ Boolean($json.found) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "6829e037-821b-29ac-46f8-2ec3f69a3297",
+      "name": "Draft Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2000,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('Pick Latest Draft').first().json;\nreturn [{ json: { prospect_id: p.prospect_id, status: 'new', updated_at: new Date().toISOString(),\n  _event: 'draft_missing', _detail: 'no draft row in Messages - sent back to research (status new)' } }];"
+      },
+      "id": "2b90c927-96ee-9d5e-39cf-c28792a3b138",
+      "name": "Shape: Draft Missing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('Pick Latest Draft').first().json;\nreturn [{ json: { prospect_id: p.prospect_id, status: 'pending_approval', updated_at: new Date().toISOString() } }];"
+      },
+      "id": "62212d2a-8c5a-83f6-d7ce-c7dfe790dc3f",
+      "name": "Shape: pending_approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "09581a31-e0f1-2b4a-76cb-492991cc0f8a",
+      "name": "Mark pending_approval",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2460,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendAndWait",
+        "sendTo": "={{ $('Config').first().json.APPROVER_EMAIL }}",
+        "subject": "=Approve outreach to {{ $('Re-read Drafted Row').first().json.company || $('Re-read Drafted Row').first().json.email }}?",
+        "message": "={{ $('Pick Latest Draft').first().json.approval_html }}",
+        "responseType": "customForm",
+        "defineForm": "fields",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Decision",
+              "fieldType": "dropdown",
+              "requiredField": true,
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Approve as written"
+                  },
+                  {
+                    "option": "Approve with my edits below"
+                  },
+                  {
+                    "option": "Reject"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Edited subject",
+              "placeholder": "Only if you chose edits - leave blank to keep the original"
+            },
+            {
+              "fieldLabel": "Edited body",
+              "fieldType": "textarea",
+              "placeholder": "Only if you chose edits - paste the full corrected email"
+            },
+            {
+              "fieldLabel": "Note",
+              "placeholder": "Optional reason (saved to Events)"
+            }
+          ]
+        },
+        "options": {
+          "limitWaitTime": {
+            "values": {
+              "limitType": "afterTimeInterval",
+              "resumeAmount": 48,
+              "resumeUnit": "hours"
+            }
+          },
+          "appendAttribution": false,
+          "messageButtonLabel": "Review & decide",
+          "responseFormTitle": "Outreach approval",
+          "responseFormDescription": "Approve, edit or reject this AI-drafted email. Nothing is sent until it is inside the send window."
+        }
+      },
+      "id": "1c947337-4f92-a93a-1f3b-fb9e4abd105e",
+      "name": "Ask Approver (Gmail Send & Wait)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2680,
+        -160
+      ],
+      "webhookId": "1c947337-4f92-a93a-1f3b-fb9e4abd105e",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "function formValue(data, label) {\n  if (!data) return '';\n  const want = label.toLowerCase();\n  for (const [k, v] of Object.entries(data)) if (k.toLowerCase() === want) return v;\n  return '';\n}\n\nconst d = $input.first().json.data;\nconst draft = $('Pick Latest Draft').first().json;\nlet decision = 'expired', subject = draft.subject, body = draft.body;\nif (d) {\n  const choice = String(formValue(d, 'Decision')).toLowerCase();\n  if (choice.startsWith('reject')) decision = 'rejected';\n  else if (choice.includes('edit')) {\n    decision = 'approved_edited';\n    const es = String(formValue(d, 'Edited subject') || '').trim();\n    const eb = String(formValue(d, 'Edited body') || '').trim();\n    if (es) subject = es;\n    if (eb) body = eb;\n  } else if (choice) decision = 'approved';\n}\nreturn [{ json: { decision, subject, body, note: String(d ? formValue(d, 'Note') : '').slice(0, 300),\n  prospect_id: draft.prospect_id, message_key: draft.message_key } }];"
+      },
+      "id": "a5b66c3b-8504-d02e-d172-0e88c275c9bf",
+      "name": "Parse Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2900,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Parse Decision').first().json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "717fd05c-b893-66d6-d2e3-6d6d32589d54",
+      "name": "Re-read After Decision",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3120,
+        -160
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d0ebeca6-6472-4087-3a56-48711a9df97c",
+              "leftValue": "={{ Boolean($json.status === 'pending_approval') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "d0ebeca6-6472-4087-3a56-48711a9df97c",
+      "name": "Still pending_approval?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3340,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Decision').first().json;\nconst map = { approved: 'approved', approved_edited: 'approved', rejected: 'rejected', expired: 'approval_expired' };\nconst out = { message_key: d.message_key, status: map[d.decision] };\nif (d.decision === 'approved_edited') { out.subject = d.subject; out.body = d.body; }\nreturn [{ json: out }];"
+      },
+      "id": "9b9fee96-3c9c-9fb1-1249-d2529b002dee",
+      "name": "Shape: Message Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3560,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "message_key"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "72250c24-17fe-19b5-3d3f-5e5a63adf58c",
+      "name": "Update Message Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3780,
+        -240
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $('Parse Decision').first().json;\nconst status = { approved: 'approved', approved_edited: 'approved', rejected: 'rejected', expired: 'approval_expired' }[d.decision];\nreturn [{ json: { prospect_id: d.prospect_id, status, updated_at: new Date().toISOString(),\n  _event: d.decision === 'expired' ? 'approval_expired' : (status === 'approved' ? (d.decision === 'approved_edited' ? 'approved_with_edits' : 'approved') : 'rejected'),\n  _detail: d.note || (d.decision === 'expired' ? 'no answer within 48h - set status back to drafted to ask again' : '') } }];"
+      },
+      "id": "3a473a23-ccc2-57b0-da49-e2837a010ab3",
+      "name": "Shape: Prospect Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4000,
+        -160
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "b94a86af-91f0-26e2-9829-16e58537ccee",
+      "name": "Changed Elsewhere - Stop",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        3560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "3d89f5f0-9665-0791-542a-2063ae982f84",
+      "name": "Update Prospect (Approval)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4220,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: { timestamp: new Date().toISOString(), prospect_id: i.json.prospect_id, workflow: 'OA-03-approval-send',\n  event: i.json._event, detail: String(i.json._detail || '').slice(0, 900) } }));"
+      },
+      "id": "027909f6-e00b-3096-b3fa-642a85a7a250",
+      "name": "Build Event Row (Approval)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4440,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "8b293cb6-703e-ff75-c8e9-7c205d8c78c4",
+      "name": "Log Event (Approval)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4660,
+        -160
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "status",
+              "lookupValue": "approved"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "63d87699-418b-2a99-5b72-51b47b1ccc2c",
+      "name": "Read Approved Prospects",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        680,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "13373eff-d3da-3e4a-01cc-cacf5c2056ed",
+      "name": "Load Events (cap)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        900,
+        300
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Suppression",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "b07a885b-cdfd-0120-ef98-c100382fa5ca",
+      "name": "Load Suppression",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        300
+      ],
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst approved = rowsOf('Read Approved Prospects').filter(r => r.prospect_id && r.status === 'approved');\nconst sentToday = sentTodayCount(rowsOf('Load Events (cap)'));\nconst supp = rowsOf('Load Suppression');\nlet budget = Math.max(0, Number(CFG.DAILY_CAP || 30) - sentToday);\nconst out = [];\nfor (const p of approved) {\n  if (isSuppressed(p.email, p.domain, supp)) { out.push({ json: { ...p, _plan: 'suppress' } }); continue; }\n  const w = sendWindow(p.timezone);\n  if (!w.ok) continue;            // stays approved; retried next run\n  if (budget <= 0) continue;      // cap reached; stays approved\n  budget--;\n  out.push({ json: { ...p, _plan: 'send', _local: `${w.zone} ${w.local}` } });\n}\nreturn out;"
+      },
+      "id": "95963c23-a6cf-ac15-0a78-57d3e18d0e11",
+      "name": "Plan Sends (window, cap, suppression)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "1b50685a-4ade-a44b-3907-c5167be06cb2",
+      "name": "Loop Sends",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "8c1093c5-d894-0feb-fd23-abcd6454782f",
+      "name": "Sends Done",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Loop Sends').first(1).json.prospect_id }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "f11cbb85-df12-823d-ac4f-3c750a50890f",
+      "name": "Re-read Before Send",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1780,
+        340
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "prospect_id",
+              "lookupValue": "={{ $('Loop Sends').first(1).json.prospect_id }}"
+            },
+            {
+              "lookupColumn": "status",
+              "lookupValue": "approved"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "c820b4bc-f231-9e74-835d-f82dd646ba96",
+      "name": "Load Approved Message",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2000,
+        340
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Suppression",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "email",
+              "lookupValue": "={{ $('Loop Sends').first(1).json.email }}"
+            }
+          ]
+        },
+        "combineFilters": "AND",
+        "options": {}
+      },
+      "id": "a80caed5-9dd5-75bf-4882-10d8e52cf6d4",
+      "name": "Re-check Suppression",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2220,
+        340
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const plan = $('Loop Sends').first(1).json;\nconst p = $('Re-read Before Send').first().json;\nconst msgs = $('Load Approved Message').all().map(i => i.json).filter(r => r && r.message_key && r.kind === 'initial');\nconst msg = msgs.length ? msgs[msgs.length - 1] : null;\nconst supp = $input.all().some(i => i.json && i.json.email);\nlet action = 'send';\nif (p.status !== 'approved') action = 'skip';\nelse if (plan._plan === 'suppress' || supp) action = 'suppress';\nelse if (!msg) action = 'no_message';\nreturn [{ json: { action, prospect_id: plan.prospect_id, email: p.email, timezone: p.timezone,\n  message_key: msg ? msg.message_key : '', subject: msg ? msg.subject : '', body: msg ? msg.body : '' } }];"
+      },
+      "id": "30373b4a-397c-40e1-bfc0-397f763faa1a",
+      "name": "Prepare Send",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "5e8479db-b725-ac83-ef17-2bb6795d7bd2",
+                    "leftValue": "={{ Boolean($json.action === 'send') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "send"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9a36d7b4-3d2b-17af-21b4-8ecec2da37d1",
+                    "leftValue": "={{ Boolean($json.action === 'suppress') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "suppress"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9c40e60a-c202-806e-eee4-1c7bcd47de71",
+                    "leftValue": "={{ Boolean($json.action === 'no_message') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "no_message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "cc839ce0-1275-2e56-111d-7aaa149bd059",
+                    "leftValue": "={{ Boolean($json.action === 'skip') }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "skip"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "ff073b41-dcdd-8932-af65-d98ddd8b2374",
+      "name": "Route Send Action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2660,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "={{ $('Config').first().json.SENDER_NAME }}"
+        }
+      },
+      "id": "49e4aa98-ee55-23cf-61fb-6b01a8589416",
+      "name": "Send Email (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2900,
+        200
+      ],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $('Prepare Send').first().json;\nconst r = $input.first().json;\nreturn [{ json: { message_key: s.message_key, status: 'sent', thread_id: r.threadId, gmail_message_id: r.id, sent_at: new Date().toISOString() } }];"
+      },
+      "id": "1e12264a-84ea-e85b-c1a4-87b791992a90",
+      "name": "Shape: Message Sent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Messages",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "message_key"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "10eaa56e-d2bf-f6d4-7652-2a5a14bdbdfc",
+      "name": "Update Message: sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3340,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "const CFG = $('Config').first().json;\nconst nowIso = () => new Date().toISOString();\nconst lc = (s) => String(s ?? '').trim().toLowerCase();\nfunction zoneFor(tz) {\n  const z = String(tz || '').trim();\n  if (z && DateTime.now().setZone(z).isValid) return z;\n  return CFG.DEFAULT_TIMEZONE || 'UTC';\n}\nfunction addBusinessDays(dt, n) {\n  let d = dt; let added = 0;\n  while (added < n) { d = d.plus({ days: 1 }); if (d.weekday <= 5) added++; }\n  return d;\n}\nfunction nextFollowupIso(businessDays, tz) {\n  const testMin = Number(CFG.TEST_FOLLOWUP_DELAY_MINUTES || 0);\n  if (testMin > 0) return DateTime.utc().plus({ minutes: testMin }).toISO();\n  return addBusinessDays(DateTime.now().setZone(zoneFor(tz)), Number(businessDays)).toUTC().toISO();\n}\nfunction sendWindow(tz) {\n  const zone = zoneFor(tz);\n  const local = DateTime.now().setZone(zone);\n  if (CFG.IGNORE_SEND_WINDOW === true || String(CFG.IGNORE_SEND_WINDOW).toLowerCase() === 'true') {\n    return { ok: true, zone, local: local.toFormat('ccc HH:mm') };\n  }\n  const ok = local.weekday <= 5 && local.hour >= Number(CFG.SEND_WINDOW_START_HOUR ?? 9) && local.hour < Number(CFG.SEND_WINDOW_END_HOUR ?? 17);\n  return { ok, zone, local: local.toFormat('ccc HH:mm') };\n}\nfunction rowsOf(nodeName) {\n  try { return $(nodeName).all().map(i => i.json).filter(r => r && Object.keys(r).length); } catch (e) { return []; }\n}\nfunction sentTodayCount(eventRows) {\n  const zone = zoneFor(CFG.DEFAULT_TIMEZONE);\n  const today = DateTime.now().setZone(zone).toISODate();\n  return eventRows.filter(r => ['sent', 'followup_sent', 'reply_sent'].includes(lc(r.event)) && r.timestamp &&\n    DateTime.fromISO(String(r.timestamp)).setZone(zone).toISODate() === today).length;\n}\nfunction isSuppressed(email, domain, suppRows) {\n  const e = lc(email); const d = lc(domain);\n  return suppRows.some(r => (lc(r.email) && lc(r.email) === e) || (!lc(r.email) && lc(r.domain) && lc(r.domain) === d));\n}\nconst safe = (s) => String(s ?? '').replace(/[{}]/g, ' ');\n\nconst s = $('Prepare Send').first().json;\nconst r = $('Send Email (Gmail)').first().json;\nreturn [{ json: { prospect_id: s.prospect_id, status: 'sent', thread_id: r.threadId, last_message_id: r.id, followup_count: 0,\n  next_followup_at: nextFollowupIso(CFG.FOLLOWUP_1_DELAY_BUSINESS_DAYS || 3, s.timezone), updated_at: nowIso(),\n  _event: 'sent', _detail: `thread ${r.threadId}; subject \"${s.subject}\"` } }];"
+      },
+      "id": "1e80daf6-e142-e458-e04e-30c4e93b1a62",
+      "name": "Shape: Prospect Sent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3560,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const s = $('Prepare Send').first().json;\nconst e = $input.first().json.error;\nreturn [{ json: { prospect_id: s.prospect_id, status: 'send_failed', updated_at: new Date().toISOString(),\n  _event: 'send_failed', _detail: String((e && (e.message || e)) || 'unknown Gmail error').slice(0, 500) } }];"
+      },
+      "id": "e09b3433-e21c-ed84-9380-2898805c7c22",
+      "name": "Shape: Send Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { prospect_id: $json.prospect_id, status: 'suppressed', updated_at: new Date().toISOString(),\n  _event: 'send_blocked_suppressed', _detail: 'email/domain found on Suppression right before sending' } }];"
+      },
+      "id": "52ebe514-c37a-ac8e-f7c9-b7009dba5b7c",
+      "name": "Shape: Suppressed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2900,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { prospect_id: $json.prospect_id, status: 'new', updated_at: new Date().toISOString(),\n  _event: 'draft_missing', _detail: 'approved but no approved row in Messages - sent back to research' } }];"
+      },
+      "id": "6ae92a18-5303-d36e-bd04-5d019278809f",
+      "name": "Shape: No Approved Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2900,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Prospects",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "prospect_id"
+          ],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "70797fc8-79c0-2544-9f01-7511a338da37",
+      "name": "Update Prospect",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3800,
+        340
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: {\n  timestamp: new Date().toISOString(), prospect_id: i.json.prospect_id || '', workflow: 'OA-03-approval-send',\n  event: i.json._event || 'updated', detail: String(i.json._detail || '').slice(0, 900) } }));"
+      },
+      "id": "6bb1bd6c-4275-5714-19e5-04458ecba9be",
+      "name": "Build Event Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4020,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Events",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "b5718853-9460-3f66-bfe6-489e5dcbff27",
+      "name": "Log Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        4240,
+        340
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Every 5 min: Request Approval": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 15 min: Send Approved": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Approval Lane?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approval Lane?": {
+      "main": [
+        [
+          {
+            "node": "Read Drafted Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Approved Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Drafted Prospects": {
+      "main": [
+        [
+          {
+            "node": "Take One",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Take One": {
+      "main": [
+        [
+          {
+            "node": "Re-read Drafted Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Drafted Row": {
+      "main": [
+        [
+          {
+            "node": "Still drafted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still drafted?": {
+      "main": [
+        [
+          {
+            "node": "Load Draft Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Draft Message": {
+      "main": [
+        [
+          {
+            "node": "Pick Latest Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Latest Draft": {
+      "main": [
+        [
+          {
+            "node": "Draft Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Found?": {
+      "main": [
+        [
+          {
+            "node": "Shape: pending_approval",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Draft Missing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: pending_approval": {
+      "main": [
+        [
+          {
+            "node": "Mark pending_approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark pending_approval": {
+      "main": [
+        [
+          {
+            "node": "Ask Approver (Gmail Send & Wait)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ask Approver (Gmail Send & Wait)": {
+      "main": [
+        [
+          {
+            "node": "Parse Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Decision": {
+      "main": [
+        [
+          {
+            "node": "Re-read After Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read After Decision": {
+      "main": [
+        [
+          {
+            "node": "Still pending_approval?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Still pending_approval?": {
+      "main": [
+        [
+          {
+            "node": "Shape: Message Decision",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Changed Elsewhere - Stop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Message Decision": {
+      "main": [
+        [
+          {
+            "node": "Update Message Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Message Status": {
+      "main": [
+        [
+          {
+            "node": "Shape: Prospect Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Prospect Decision": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect (Approval)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Draft Missing": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect (Approval)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Prospect (Approval)": {
+      "main": [
+        [
+          {
+            "node": "Build Event Row (Approval)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event Row (Approval)": {
+      "main": [
+        [
+          {
+            "node": "Log Event (Approval)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Approved Prospects": {
+      "main": [
+        [
+          {
+            "node": "Load Events (cap)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Events (cap)": {
+      "main": [
+        [
+          {
+            "node": "Load Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Suppression": {
+      "main": [
+        [
+          {
+            "node": "Plan Sends (window, cap, suppression)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Plan Sends (window, cap, suppression)": {
+      "main": [
+        [
+          {
+            "node": "Loop Sends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Sends": {
+      "main": [
+        [
+          {
+            "node": "Sends Done",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Re-read Before Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-read Before Send": {
+      "main": [
+        [
+          {
+            "node": "Load Approved Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Approved Message": {
+      "main": [
+        [
+          {
+            "node": "Re-check Suppression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Re-check Suppression": {
+      "main": [
+        [
+          {
+            "node": "Prepare Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Send": {
+      "main": [
+        [
+          {
+            "node": "Route Send Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Send Action": {
+      "main": [
+        [
+          {
+            "node": "Send Email (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Suppressed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: No Approved Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Sends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Shape: Message Sent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Shape: Send Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Message Sent": {
+      "main": [
+        [
+          {
+            "node": "Update Message: sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Message: sent": {
+      "main": [
+        [
+          {
+            "node": "Shape: Prospect Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Prospect": {
+      "main": [
+        [
+          {
+            "node": "Build Event Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Event Row": {
+      "main": [
+        [
+          {
+            "node": "Log Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Event": {
+      "main": [
+        [
+          {
+            "node": "Loop Sends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Prospect Sent": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Send Failed": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Suppressed": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: No Approved Message": {
+      "main": [
+        [
+          {
+            "node": "Update Prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REPLACE_WITH_OA99_ERROR_HANDLER_WORKFLOW_ID"
+  },
+  "pinData": {},
+  "active": false,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

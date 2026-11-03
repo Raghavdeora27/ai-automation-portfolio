@@ -1,6 +1,7 @@
 # 11 — Accounts payable with human approval
 
 **Platform:** Make
+**Type:** single automation (plain number, no prefix)
 **Status:** 🗺️ Planned
 
 This is a design spec. The workflow is not built yet. I add the working export and a demo video when it is built and tested.
@@ -20,6 +21,23 @@ Supplier invoices arrive as PDFs, get retyped by hand, and occasionally get ente
 **Who it's for:** finance teams receiving supplier invoices by email.
 
 **Tools:** OpenAI, QuickBooks or Xero, Slack, on Make.
+
+## Where this is used
+
+Approvals were part of the automation work I did at BlueBox with Flokzu, ClickUp and Zoho. This workflow brings the same approach to supplier bills: the details are read from the PDF, a person approves each bill in one click, and only approved bills reach the books.
+
+## Steps and skills
+
+These are the steps I designed, and the skill each one shows. The full flow and edge cases are below.
+
+| Step | What happens | Skills involved |
+| --- | --- | --- |
+| 1 | Pick up the bill email and its PDF | Email parsing |
+| 2 | Extract vendor, number, date, tax and total with a fixed schema | AI document extraction |
+| 3 | Check for a duplicate bill | Dedupe |
+| 4 | Ask for approval in Slack with one click | Human-in-the-loop |
+| 5 | Create the bill in QuickBooks, or authorise the Xero draft, only after approval | Accounting APIs |
+| 6 | Log the result and alert on failure | Audit trail, error routes |
 
 ## Business problem
 
