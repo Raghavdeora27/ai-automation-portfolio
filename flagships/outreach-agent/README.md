@@ -2,7 +2,7 @@
 
 **OA (Outreach Agent)** is my flagship n8n system for cold outreach. It finds out who each prospect is, writes a personal first email with AI, waits for my approval, sends at the right local time, follows up in the same thread and handles every reply. It runs on n8n with Google Gemini, uses Google Sheets as the CRM and sends through Gmail.
 
-**Status:** ✅ Built. OA-00 through OA-06 were live-tested end to end on self-hosted n8n 2.8.4 (4–5 Nov 2026) and passed. Still untested: the OA-99 alert email, the webhook intake, and OA-04 follow-up 2 → no_response. Details [below](#test-status).
+**Status:** ✅ Built. Live-tested end to end on self-hosted n8n 2.8.4 (4–5 Nov 2026): OA-00 through OA-06, plus OA-99 error handling. Details [below](#test-status).
 
 ## What you get (the instant value)
 
@@ -21,7 +21,7 @@ I ran outreach and candidate pipelines by hand as Outreach Manager at DataisGood
 
 ## How it works, step by step
 
-Eight n8n workflows share one Google Sheet. The `status` column on the Prospects tab is the queue between them, so each workflow is small, runs on its own schedule, and is safe to re-run.
+OA is one system. Eight workflows, OA-00 through OA-06 plus OA-99, share one Google Sheet. The `status` column on the Prospects tab is the queue between them, so each workflow is small, runs on its own schedule, and is safe to re-run. Support Agent and CRM Pipeline are separate flagships.
 
 | Step | Workflow | What happens | Skills involved |
 | --- | --- | --- | --- |
@@ -42,14 +42,14 @@ Diagram, status lifecycle and design decisions: [ARCHITECTURE.md](ARCHITECTURE.m
 | --- | --- |
 | OA-00 · Form Intake: add a prospect, and reject a duplicate | ✅ Tested |
 | OA-01 · Outreach Intake: sheet import (new row added, duplicate rejected) and the Events log | ✅ Tested |
-| OA-01 · Outreach Intake: webhook | ⏳ Built. Not tested yet. |
+| OA-01 · Outreach Intake: webhook | ✅ Tested |
 | OA-02 · Research & Draft: research, draft, and the Errors row it writes when research fails | ✅ Tested |
 | OA-03 · Approval & Send: approve with edits, reject, and send | ✅ Tested |
 | OA-04 · Follow-ups: follow-up 1 in the same thread | ✅ Tested |
-| OA-04 · Follow-ups: follow-up 2, then no_response | ⏳ Built. Not tested yet. Only follow-up 1 was run. |
+| OA-04 · Follow-ups: follow-up 2, then no_response | ✅ Tested |
 | OA-05 · Inbox Agent: match a reply, classify it, approve the suggested reply, send it in the thread, status `in_conversation` | ✅ Tested |
 | OA-06 · Weekly Report | ✅ Tested |
-| OA-99 · Error Handler: alert email | ⏳ Built and set as the error workflow for OA-00 to OA-06. The alert email is not tested yet. OA-02's own error branch writes the Errors row, and that part is tested. |
+| OA-99 · Error Handler: alert email | ✅ Tested |
 
 The steps for each test are in [SETUP.md](SETUP.md#7-six-test-cases-do-these-before-recording).
 

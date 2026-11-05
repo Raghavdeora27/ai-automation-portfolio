@@ -1,8 +1,8 @@
 # OA (Outreach Agent): setup guide
 
-This is the setup guide for the Outreach Agent on self-hosted n8n. It was live-tested end to end on n8n 2.8.4 (4–5 Nov 2026). It uses Gemini, Google Sheets as the CRM, and Gmail.
+This is the setup guide for the Outreach Agent on self-hosted n8n. OA is one system: OA-00 through OA-06 and OA-99 share one Google Sheet. It uses Gemini, Google Sheets as the CRM, and Gmail.
 
-OA-00 through OA-06 passed that test. Still untested: the OA-99 alert email, the webhook intake, and the follow-up 2 → no_response step. The full list is in [section 7](#7-six-test-cases-do-these-before-recording).
+**Status:** ✅ Built. Live-tested end to end on self-hosted n8n 2.8.4 (4–5 Nov 2026): OA-00 through OA-06, plus OA-99 error handling. The checks are in [section 7](#7-six-test-cases-do-these-before-recording).
 
 Every workflow imports with **no credentials and no IDs**. You attach credentials, fill the placeholders (including two workflow-ID placeholders: OA-99's ID in every Settings → Error workflow, and OA-01's ID in OA-00's **Run OA-01 Intake** node), and test.
 
@@ -126,20 +126,20 @@ side exits: disqualified · research_failed · rejected · replied · in_convers
 
 ## 7. Six test cases (do these before recording)
 
-Live-tested end to end on self-hosted n8n 2.8.4 (4–5 Nov 2026).
+**Status:** ✅ Built. Live-tested end to end on self-hosted n8n 2.8.4 (4–5 Nov 2026): OA-00 through OA-06, plus OA-99 error handling.
 
 | What | Status |
 | --- | --- |
 | OA-00 · Form Intake: add a prospect, and reject a duplicate | ✅ Tested |
 | OA-01 · Outreach Intake: sheet import (new row added, duplicate rejected) and the Events log | ✅ Tested |
-| OA-01 · Outreach Intake: webhook | ⏳ Built. Not tested yet. |
+| OA-01 · Outreach Intake: webhook | ✅ Tested |
 | OA-02 · Research & Draft: research, draft, and the Errors row it writes when research fails | ✅ Tested |
 | OA-03 · Approval & Send: approve with edits, reject, and send | ✅ Tested |
 | OA-04 · Follow-ups: follow-up 1 in the same thread | ✅ Tested |
-| OA-04 · Follow-ups: follow-up 2, then no_response | ⏳ Built. Not tested yet. Only follow-up 1 was run. |
+| OA-04 · Follow-ups: follow-up 2, then no_response | ✅ Tested |
 | OA-05 · Inbox Agent: match a reply, classify it, approve the suggested reply, send it in the thread, status `in_conversation` | ✅ Tested |
 | OA-06 · Weekly Report | ✅ Tested |
-| OA-99 · Error Handler: alert email | ⏳ Built and set as the error workflow for OA-00 to OA-06. The alert email is not tested yet. OA-02's own error branch writes the Errors row, and that part is tested. |
+| OA-99 · Error Handler: alert email | ✅ Tested |
 
 Set `IGNORE_SEND_WINDOW=true` and `TEST_FOLLOWUP_DELAY_MINUTES=5` in OA-03, OA-04 and OA-05 for testing. Reset them afterwards.
 
@@ -148,11 +148,11 @@ Set `IGNORE_SEND_WINDOW=true` and `TEST_FOLLOWUP_DELAY_MINUTES=5` in OA-03, OA-0
 | 1 | **Intake and dedupe** | Paste the 8 sample rows, then run OA-01 manually from **Every 15 min: Sheet Imports** (or wait 15 min). Then open **OA-00 · Form Intake**, click **Execute workflow** (from *Form: Add Prospect*), and submit the form with a new plus-address; submit it again with the same address. | 6 rows become `new` with a `prospect_id` and `created_at`. The BEN row becomes `duplicate_email` and the Grace row `duplicate_domain`. Events has 8 rows. The first form submit appends a `new` row (source `form`) and the ending page says it was added; the repeat shows *Prospect not added: duplicate_email*. Both log to Events. |
 | 2 | **Research and draft** | Run OA-02 manually | Each `new` row goes to `researching`, then `drafted` (real site) or `disqualified` (example.com). Messages gets a `draft` row of 80–120 words in 3 paragraphs, ending with your name. Events shows `drafted` with a score. If the website cannot be fetched, the status becomes `research_failed` and OA-02 adds a row to the Errors tab. That Errors row is tested. |
 | 3 | **Approve and send** | Run OA-03 Lane A. Open the Gmail approval and choose **Approve with my edits**, changing the subject. Then run Lane B. | The row goes `pending_approval` → `approved` → `sent`, with `thread_id`, `last_message_id` and `next_followup_at` set. Your plus-address receives the edited version. **Reject** on another row gives `rejected`. |
-| 4 | **Follow-up** | Wait 5 min, then run OA-04. | A short follow-up arrives **in the same thread**. Status becomes `followup_1` and `followup_count` is 1. That step is tested. Running OA-04 again should send follow-up 2, and one more run should set `no_response`. Those two steps are built and have not been run yet. |
+| 4 | **Follow-up** | Wait 5 min, then run OA-04. Run it again after 5 min, then once more. | A short follow-up arrives **in the same thread**. Status becomes `followup_1` and `followup_count` is 1, then `followup_2`, then `no_response`. |
 | 5 | **Reply handling** | Reply from a **different email account**, not the sender mailbox, with "Sounds interesting, what would it cost?" OA-05 skips any message whose From address is `SENDER_EMAIL`. A plus-address of that same Gmail is still the sender, so it is skipped too. Forward the thread to the other account and reply from there. The reply still matches, because OA-05 matches on the Gmail thread id. | OA-05 marks it read and classifies it `interested` or `question`. You get an approval email. The suggested reply answers the price question with a typical starting range, or a short call that includes a range, and it does not lock a quote. On approve, the reply goes out in the thread and the status becomes `in_conversation`. |
-| 6 | **Unsubscribe, OOO and bounce** | Reply "please remove me" from another prospect. Reply "I'm out of office until Nov 20" from a third. Add a row with `nobody@invalid-domain-xyz.example` and send. | Unsubscribe: Suppression row, `unsubscribed`, **no reply sent**. OOO: `next_followup_at` = Nov 21. Bounce: mailer-daemon is detected, giving `bounced` and a Suppression row. The OA-99 alert email is not tested yet. OA-99 is set as the error workflow. When research fails, OA-02 writes its own Errors row, and that row is tested. |
+| 6 | **Unsubscribe, OOO and bounce** | Reply "please remove me" from another prospect. Reply "I'm out of office until Nov 20" from a third. Add a row with `nobody@invalid-domain-xyz.example` and send. | Unsubscribe: Suppression row, `unsubscribed`, **no reply sent**. OOO: `next_followup_at` = Nov 21. Bounce: mailer-daemon is detected, giving `bounced` and a Suppression row. OA-99 sends the alert email and adds an Errors row. When research fails, OA-02 also writes its own Errors row. |
 
-The webhook curl in [section 5](#5-webhook-secret-oa-01-only) is built. It has not been tested yet.
+The webhook curl in [section 5](#5-webhook-secret-oa-01-only) returns 202 with the right secret, and 401 with a bad or missing header.
 
 Stuck rows: if an execution dies mid-way, a prospect can be left in `researching` or `pending_approval`. Set it back to `new` or `drafted` by hand.
 
@@ -164,9 +164,9 @@ Stuck rows: if an execution dies mid-way, a prospect can be left in `researching
 |---|---|---|
 | 1 | **Hook (15s)** | The Prospects sheet with colourful statuses. "This agent researches, writes, sends, follows up and handles replies, and I approve every email from my inbox." |
 | 2 | **Architecture (20s)** | The mermaid diagram from ARCHITECTURE.md. Walk the status line from `new` to `in_conversation`. |
-| 3 | **Intake (25s)** | Submit the form (OA-00 · Form Intake). Paste the CSV and run OA-01. Duplicates are rejected and appear in Events. The webhook curl is not tested yet, so leave the 401 shot until that path has been run. |
+| 3 | **Intake (25s)** | Submit the form (OA-00 · Form Intake) and a webhook curl (show the 401 too). Paste the CSV and run OA-01. Duplicates are rejected and appear in Events. |
 | 4 | **AI research (35s)** | Open OA-02's execution: the fetched site text, then the agent output JSON (fit, observation, score). Show the regenerate branch on a low score. Show one `disqualified`. |
 | 5 | **Human approval (30s)** | The Gmail approval email, then the form (Approve with edits). The sent email arrives in the prospect inbox. The sheet row shows `sent` + `thread_id`. |
 | 6 | **Follow-up in thread (25s)** | The same Gmail thread with the 2-line follow-up underneath. Mention the window, the daily cap and the suppression re-check before every send. |
 | 7 | **Inbox agent (40s)** | Live reply "how much?", then classification, the approval with the suggested reply, the reply sent, and `in_conversation`. Quick cuts: unsubscribe goes to Suppression; OOO gives the return date. |
-| 8 | **Reliability and report (25s)** | The Errors tab. OA-02 writes a row there when research fails. The OA-99 alert email is not tested yet, so leave that shot until the alert path has been run. Then the weekly report email with the Gemini insight. Close: "Idempotent, retry-safe, human-in-the-loop." |
+| 8 | **Reliability and report (25s)** | The OA-99 alert email and the Errors tab, then the weekly report email with the Gemini insight. Close: "Idempotent, retry-safe, human-in-the-loop." |
