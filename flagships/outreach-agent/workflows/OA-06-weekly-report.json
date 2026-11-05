@@ -1,5 +1,5 @@
 {
-  "name": "OA-06 Weekly Report",
+  "name": "OA-06 · Weekly Report",
   "nodes": [
     {
       "parameters": {
@@ -235,12 +235,12 @@
         0
       ],
       "retryOnFail": true,
-      "maxTries": 3,
+      "maxTries": 4,
       "waitBetweenTries": 5000
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.5-flash",
+        "modelName": "models/gemini-3.5-flash-lite",
         "options": {
           "temperature": 0.3
         }
@@ -254,8 +254,8 @@
         200
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 4000
+      "maxTries": 4,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {

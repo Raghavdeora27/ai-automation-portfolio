@@ -36,7 +36,7 @@ return out;
 '''
 
 def build_05(path):
-    wf = WF('OA-05 Inbox Agent', '05')
+    wf = WF('OA-05 · Inbox Agent', '05')
     wf.note('Inbox agent (polls Gmail every minute)', 'Unread INBOX mail → matched to a prospect by **thread_id** or **sender email** (bounces: by the address inside the bounce). Non-prospect mail is ignored and **left unread**.\n\nGemini classifier (structured output) returns category, summary, suggested_reply, return_date, then a Switch routes:\n- **interested / question / objection** → status `replied`, approver gets the suggested reply (send / edit / don\'t send) → reply in thread → `in_conversation`\n- **not_now** → `snoozed`, recontact_at +75 days\n- **unsubscribe** → Suppression + `unsubscribed`, never replies\n- **out_of_office** → next_followup_at = return date + 1 day (status kept)\n- **bounce** (classifier or mailer-daemon) → `bounced` + Suppression\n- **other** → `replied` for you to read\n\nEvery handled email is marked read and logged to Events.', (-100, -720), 800, 520, 4)
     wf.note('Approval pauses the batch', 'Send-and-Wait pauses this execution until you answer, so other replies that arrived in the **same minute** wait too. Answer approvals promptly (or switch the reply step to Gmail **Create Draft** if you prefer to review in Gmail).', (2900, -720), 520, 220, 3)
     t = wf.add('Gmail Trigger: Unread Inbox', 'n8n-nodes-base.gmailTrigger', 'gmailTrigger', {
@@ -64,8 +64,9 @@ def build_05(path):
         "not_now (polite not right now or later this year), unsubscribe (asks to stop, remove, not interested at all), out_of_office (automatic absence reply), "
         "bounce (delivery failure notice), other (anything else).\n"
         "summary: one sentence.\n"
-        "suggested_reply: only for interested, question or objection. Plain text, 40 to 90 words, warm and direct, answers what they said, no lists, no links, no buzzwords, "
-        "starts with Hi and the first name, ends with Best, and {{ $('Config').first().json.SENDER_NAME }} on separate lines. Never promise prices, dates or results. Otherwise an empty string.\n"
+        "suggested_reply: only for interested, question or objection. Plain text, 40 to 90 words, warm and direct, answers what they said. "
+        "If they ask about price or cost, answer directly: give a typical starting range, or offer a short call and include a range. Do not make a hard promise (no fixed quote, no guaranteed date, no guaranteed result). "
+        "No lists, no links, no buzzwords, starts with Hi and the first name, ends with Best, and {{ $('Config').first().json.SENDER_NAME }} on separate lines. Otherwise an empty string.\n"
         "return_date: for out_of_office the date they are back as YYYY-MM-DD if stated (today is {{ $now.toISODate() }}), otherwise an empty string.",
         (1580, -60), 'Gemini (Classifier)', 'Parse Classification JSON', CLASS_SCHEMA, 0.2, on_error='continueErrorOutput')
     wf.c(br, cls, 1); wf.c(br, lp, 2)
@@ -155,7 +156,7 @@ const c = $('Classified').first().json;
 const r = $input.first().json;
 const now = new Date().toISOString();
 return [{ json: { message_key: `${c.prospect_id}-reply-${Date.now()}`, prospect_id: c.prospect_id, email: c.email, domain: c.domain, kind: 'reply',
-  subject: 'Re: ' + c.subject, body: $('Parse Reply Decision').first().json.body, quality_score: '', status: 'sent',
+  subject: /^re:/i.test(c.subject) ? c.subject : 'Re: ' + c.subject, body: $('Parse Reply Decision').first().json.body, quality_score: '', status: 'sent',
   thread_id: r.threadId || c.thread_id, gmail_message_id: r.id || '', created_at: now, sent_at: now } }];
 ''', (4760, -500))
     smw = sheet(wf, 'Save Reply to Messages', sheets_append('Messages'), (4980, -500))

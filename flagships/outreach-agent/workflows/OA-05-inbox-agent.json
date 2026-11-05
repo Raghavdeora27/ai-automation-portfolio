@@ -1,5 +1,5 @@
 {
-  "name": "OA-05 Inbox Agent",
+  "name": "OA-05 · Inbox Agent",
   "nodes": [
     {
       "parameters": {
@@ -364,7 +364,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=Classify this email reply to a cold outreach message from {{ $('Config').first().json.SENDER_NAME }}, who builds small business automations and offered to send a 2-minute video.\n\nFrom: {{ $('Loop Replies').first(1).json.from }}\nSubject: {{ $('Loop Replies').first(1).json.subject }}\nProspect first name: {{ $('Loop Replies').first(1).json.first_name }} | Company: {{ $('Loop Replies').first(1).json.company }}\n\nReply text:\n{{ $('Loop Replies').first(1).json.reply_text }}\n\nCategories: interested (wants the video, a call or more info), question (asks something specific), objection (pushback on price, need, timing with reasons, or trust), not_now (polite not right now or later this year), unsubscribe (asks to stop, remove, not interested at all), out_of_office (automatic absence reply), bounce (delivery failure notice), other (anything else).\nsummary: one sentence.\nsuggested_reply: only for interested, question or objection. Plain text, 40 to 90 words, warm and direct, answers what they said, no lists, no links, no buzzwords, starts with Hi and the first name, ends with Best, and {{ $('Config').first().json.SENDER_NAME }} on separate lines. Never promise prices, dates or results. Otherwise an empty string.\nreturn_date: for out_of_office the date they are back as YYYY-MM-DD if stated (today is {{ $now.toISODate() }}), otherwise an empty string.",
+        "text": "=Classify this email reply to a cold outreach message from {{ $('Config').first().json.SENDER_NAME }}, who builds small business automations and offered to send a 2-minute video.\n\nFrom: {{ $('Loop Replies').first(1).json.from }}\nSubject: {{ $('Loop Replies').first(1).json.subject }}\nProspect first name: {{ $('Loop Replies').first(1).json.first_name }} | Company: {{ $('Loop Replies').first(1).json.company }}\n\nReply text:\n{{ $('Loop Replies').first(1).json.reply_text }}\n\nCategories: interested (wants the video, a call or more info), question (asks something specific), objection (pushback on price, need, timing with reasons, or trust), not_now (polite not right now or later this year), unsubscribe (asks to stop, remove, not interested at all), out_of_office (automatic absence reply), bounce (delivery failure notice), other (anything else).\nsummary: one sentence.\nsuggested_reply: only for interested, question or objection. Plain text, 40 to 90 words, warm and direct, answers what they said. If they ask about price or cost, answer directly: give a typical starting range, or offer a short call and include a range. Do not make a hard promise (no fixed quote, no guaranteed date, no guaranteed result). No lists, no links, no buzzwords, starts with Hi and the first name, ends with Best, and {{ $('Config').first().json.SENDER_NAME }} on separate lines. Otherwise an empty string.\nreturn_date: for out_of_office the date they are back as YYYY-MM-DD if stated (today is {{ $now.toISODate() }}), otherwise an empty string.",
         "hasOutputParser": true
       },
       "id": "b0863a54-fb45-87e5-9d81-b6ac97eb498c",
@@ -377,12 +377,12 @@
       ],
       "onError": "continueErrorOutput",
       "retryOnFail": true,
-      "maxTries": 3,
+      "maxTries": 4,
       "waitBetweenTries": 5000
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.5-flash",
+        "modelName": "models/gemini-3.5-flash-lite",
         "options": {
           "temperature": 0.2
         }
@@ -396,8 +396,8 @@
         140
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 4000
+      "maxTries": 4,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -915,7 +915,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const c = $('Classified').first().json;\nconst r = $input.first().json;\nconst now = new Date().toISOString();\nreturn [{ json: { message_key: `${c.prospect_id}-reply-${Date.now()}`, prospect_id: c.prospect_id, email: c.email, domain: c.domain, kind: 'reply',\n  subject: 'Re: ' + c.subject, body: $('Parse Reply Decision').first().json.body, quality_score: '', status: 'sent',\n  thread_id: r.threadId || c.thread_id, gmail_message_id: r.id || '', created_at: now, sent_at: now } }];"
+        "jsCode": "const c = $('Classified').first().json;\nconst r = $input.first().json;\nconst now = new Date().toISOString();\nreturn [{ json: { message_key: `${c.prospect_id}-reply-${Date.now()}`, prospect_id: c.prospect_id, email: c.email, domain: c.domain, kind: 'reply',\n  subject: /^re:/i.test(c.subject) ? c.subject : 'Re: ' + c.subject, body: $('Parse Reply Decision').first().json.body, quality_score: '', status: 'sent',\n  thread_id: r.threadId || c.thread_id, gmail_message_id: r.id || '', created_at: now, sent_at: now } }];"
       },
       "id": "d6f20aec-da73-c13c-d4f7-bfdc31ad5bad",
       "name": "Shape: Reply Message",

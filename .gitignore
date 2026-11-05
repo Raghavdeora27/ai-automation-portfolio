@@ -21,3 +21,7 @@ n8nEventLog.log
 # OS noise
 .DS_Store
 Thumbs.db
+
+# Python bytecode from the workflow generator
+__pycache__/
+*.pyc

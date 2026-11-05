@@ -1,11 +1,11 @@
 {
-  "name": "OA-02 Research & Draft",
+  "name": "OA-02 · Research & Draft",
   "nodes": [
     {
       "parameters": {
-        "content": "## Research & draft (every 30 min)\nTakes up to **10** prospects with status `new`, one at a time:\n1. Re-reads the row and locks it as `researching` (idempotent: a row is only processed if it is still `new`)\n2. Fetches the website (15 s timeout, 3 retries, continue on fail) and strips it to text (6000 chars)\n3. **AI Agent (Gemini)** checks fit, checks prior messages to the same domain via a **Google Sheets tool**, writes the email; Structured Output Parser enforces the JSON\n4. Code re-scores the draft against the style rules; below MIN_QUALITY gets **one** regenerate\n5. Saves the draft to **Messages**, sets `drafted` / `disqualified` / `research_failed`, logs to **Events**",
-        "height": 330,
-        "width": 760,
+        "content": "## Research & draft (every 30 min)\nTakes up to **10** prospects with status `new` and a prospect_id, one at a time:\n1. Re-reads the row and locks it as `researching` (idempotent: a row is only processed if it is still `new`)\n2. Fetches the website with a Chrome user-agent (15 s timeout, 3 retries, continue on fail) and strips it to text (6000 chars)\n3. **AI Agent (Gemini)** checks fit, checks prior messages to the same domain via a **Google Sheets tool**, writes the email; Structured Output Parser enforces the JSON. The agent and Gemini nodes retry 4 times, 5 s apart\n4. Code re-scores the draft against the style rules; below MIN_QUALITY gets **one** regenerate\n5. Saves the draft to **Messages**, sets `drafted` / `disqualified` / `research_failed`, logs to **Events**. `research_failed` also appends a row to **Errors** (this caught path does not raise to OA-99)",
+        "height": 380,
+        "width": 780,
         "color": 4
       },
       "id": "166b3ab2-0956-89b3-2153-db9af9572a10",
@@ -14,7 +14,7 @@
       "typeVersion": 1,
       "position": [
         -100,
-        -480
+        -520
       ]
     },
     {
@@ -210,6 +210,41 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1bebf96c-99c8-702d-18b2-812e704b6ecf",
+              "leftValue": "={{ Boolean($json.prospect_id) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "1bebf96c-99c8-702d-18b2-812e704b6ecf",
+      "name": "Has prospect_id?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        550,
+        180
+      ]
+    },
+    {
+      "parameters": {
         "maxItems": 10
       },
       "id": "c2b3e4c8-e9a7-d7d4-adc0-8bc00c025459",
@@ -377,7 +412,7 @@
           "parameters": [
             {
               "name": "User-Agent",
-              "value": "Mozilla/5.0 (compatible; OutreachResearchBot/1.0)"
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
             },
             {
               "name": "Accept",
@@ -481,12 +516,12 @@
       ],
       "onError": "continueErrorOutput",
       "retryOnFail": true,
-      "maxTries": 3,
+      "maxTries": 4,
       "waitBetweenTries": 5000
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.5-flash",
+        "modelName": "models/gemini-3.5-flash-lite",
         "options": {
           "temperature": 0.6
         }
@@ -500,8 +535,8 @@
         140
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 4000
+      "maxTries": 4,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -631,12 +666,12 @@
       ],
       "onError": "continueErrorOutput",
       "retryOnFail": true,
-      "maxTries": 3,
+      "maxTries": 4,
       "waitBetweenTries": 5000
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.5-flash",
+        "modelName": "models/gemini-3.5-flash-lite",
         "options": {
           "temperature": 0.5
         }
@@ -650,8 +685,8 @@
         -40
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 4000
+      "maxTries": 4,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -695,7 +730,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const j = $input.first().json;\nreturn [{ json: { ...j, prospect_id: $('Loop Prospects').first(1).json.prospect_id } }];"
+        "jsCode": "const j = $input.first().json;\nreturn [{ json: { ...j, prospect_id: $('Shape: Lock Row').first().json.prospect_id } }];"
       },
       "id": "ab35825b-eb06-a6e2-87eb-3f1e8cb52d9b",
       "name": "Finalize Outcome",
@@ -705,6 +740,56 @@
         3960,
         0
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const locked = $('Shape: Lock Row').first().json || {};\nconst failed = $input.first().json || {};\nconst site = $('Extract Site Text').isExecuted ? $('Extract Site Text').first().json : {};\nconst where = site.site_ok ? 'AI Research & Draft Agent' : 'Fetch Website';\nconst pid = String(locked.prospect_id || '');\nconst reason = String(failed.fit_reason || 'research failed').slice(0, 1200);\nlet executionId = '';\nlet mode = '';\nlet workflowName = 'OA-02 · Research & Draft';\ntry {\n  if (typeof $workflow !== 'undefined' && $workflow && $workflow.name) workflowName = String($workflow.name);\n  if (typeof $execution !== 'undefined' && $execution) {\n    executionId = String($execution.id || '');\n    mode = String($execution.mode || '');\n  }\n} catch (e) {}\nreturn [{ json: {\n  timestamp: new Date().toISOString(),\n  workflow: workflowName,\n  node: where,\n  error_message: (pid ? pid + ': ' : '') + reason,\n  execution_id: executionId,\n  execution_url: '',\n  mode: mode,\n} }];"
+      },
+      "id": "da9182d2-388f-a180-baef-0fe39b3f57cc",
+      "name": "Shape: Caught Error Row",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3180,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Config').first().json.SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Errors",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        },
+        "options": {
+          "cellFormat": "RAW",
+          "handlingExtraData": "ignoreIt"
+        }
+      },
+      "id": "0888423b-84cb-7333-0b39-e4f0f5a2ba46",
+      "name": "Append to Errors",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        3420,
+        460
+      ],
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
     },
     {
       "parameters": {
@@ -990,6 +1075,17 @@
       "main": [
         [
           {
+            "node": "Has prospect_id?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has prospect_id?": {
+      "main": [
+        [
+          {
             "node": "Take Batch of 10",
             "type": "main",
             "index": 0
@@ -1264,6 +1360,22 @@
         [
           {
             "node": "Finalize Outcome",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Shape: Caught Error Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape: Caught Error Row": {
+      "main": [
+        [
+          {
+            "node": "Append to Errors",
             "type": "main",
             "index": 0
           }

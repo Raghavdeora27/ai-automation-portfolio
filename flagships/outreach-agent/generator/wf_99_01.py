@@ -12,7 +12,7 @@ def write_pair(wf, label, js, tab, op, key, pos, each=False):
 
 # ================= 99 ERROR HANDLER =================
 def build_99(path):
-    wf = WF('OA-99 Error Handler', '99')
+    wf = WF('OA-99 · Error Handler', '99')
     wf.note('Error handler', 'Every outreach workflow points its **Settings → Error workflow** here.\n\n1. Error Trigger receives the failed execution\n2. Config holds ALERT_EMAIL + SHEET_ID\n3. Format a readable alert\n4. Email the alert **and** append a row to the **Errors** tab (each branch continues even if the other fails).', (-80, -260), 520, 240, 3)
     t = wf.add('Error Trigger', 'n8n-nodes-base.errorTrigger', 'errorTrigger', {}, (0, 100))
     cfg = wf.add('Config', 'n8n-nodes-base.set', 'set', config_params(), (220, 100))
@@ -79,10 +79,15 @@ function cyrb53(str, seed = 0) {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0');
 }
 function hostOf(url) {
-  let u = clean(url).toLowerCase();
-  if (!u) return '';
-  if (!/^https?:\/\//.test(u)) u = 'https://' + u;
-  try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
+  // Hostname only. The n8n task-runner sandbox has no URL constructor, so this stays a regex.
+  const raw = clean(url).toLowerCase();
+  if (!raw) return '';
+  let u = raw;
+  if (u.startsWith('//')) u = 'https:' + u;
+  else if (!/^https?:\/\//.test(u)) u = 'https://' + u;
+  const m = u.match(/^https?:\/\/(?:[^@\/?#\s]*@)?(\[[^\]]+\]|[^\/?#:\s]+)(?::\d+)?(?:[\/?#][\s\S]*)?$/);
+  if (!m) return '';
+  return m[1].replace(/^www\./, '');
 }
 const out = [];
 for (const item of $input.all()) {
@@ -144,10 +149,10 @@ return candidates.map((c) => {
 '''
 
 def build_01(path):
-    wf = WF('OA-01 Outreach Intake', '01')
-    wf.note('1. Three ways in', 'Prospects arrive through:\n- **Form** lives in **OA-00 Form Intake**, which calls this workflow via **When Executed by Another Workflow** (accept all data) -> source `form`. (n8n Form Trigger workflows cannot contain Respond to Webhook nodes, so the form is split out.)\n- **Webhook** `POST /webhook/outreach-intake` with header `x-webhook-secret` (= env `OUTREACH_WEBHOOK_SECRET`). Body: one prospect object, an array, or `{ "prospects": [...] }`\n- **Schedule**: picks up rows pasted into **Prospects** with status `new_import`', (-120, -420), 700, 260, 4)
+    wf = WF('OA-01 · Outreach Intake', '01')
+    wf.note('1. Three ways in', 'Prospects arrive through:\n- **Form** lives in **OA-00 · Form Intake**, which calls this workflow via **When Executed by Another Workflow** (accept all data) -> source `form`. (n8n Form Trigger workflows cannot contain Respond to Webhook nodes, so the form is split out.)\n- **Webhook** `POST /webhook/outreach-intake` with header `x-webhook-secret` (= env `OUTREACH_WEBHOOK_SECRET`). Body: one prospect object, an array, or `{ "prospects": [...] }`\n- **Schedule**: picks up rows pasted into **Prospects** with status `new_import`', (-120, -420), 700, 260, 4)
     wf.note('2. Clean, dedupe, protect', 'Normalise (trim, lowercase email, company domain from website or business email), validate email, then dedupe against the CRM by **email AND company domain** (free-mail domains are never used for domain dedupe) and check the **Suppression** tab. Deterministic `prospect_id` = hash of email.', (980, -420), 640, 260, 5)
-    wf.note('3. Write + audit trail', 'New prospects get status `new` (OA-02-research-draft picks them up). Sheet-import rows are updated in place; rejected imports are marked `duplicate_email` / `duplicate_domain` / `suppressed` / `invalid_email`. **Every decision is logged to Events.**', (1900, -420), 640, 260, 6)
+    wf.note('3. Write + audit trail', 'New prospects get status `new` (**OA-02 · Research & Draft** picks them up). Sheet-import rows are updated in place; rejected imports are marked `duplicate_email` / `duplicate_domain` / `suppressed` / `invalid_email`. **Every decision is logged to Events.**', (1900, -420), 640, 260, 6)
 
     sub = wf.add(SUBWF_TRIGGER, 'n8n-nodes-base.executeWorkflowTrigger', 'execWfTrigger',
                  {'inputSource': 'passthrough'}, (0, -100))
@@ -183,10 +188,10 @@ return list.map(p => ({ json: {
   timezone: p.timezone ?? '', notes: p.notes ?? '', source: p.source || 'webhook', _source: 'webhook' } }));
 '''), (1140, -140))
     wf.c(route, sec, 0); wf.c(sec, r202, 0); wf.c(sec, r401, 1); wf.c(r202, mapw)
-    # form branch: OA-00 Form Intake calls this workflow via Execute Workflow (the Form Trigger lives in OA-00,
+    # form branch: OA-00 · Form Intake calls this workflow via Execute Workflow (the Form Trigger lives in OA-00,
     # because n8n Form Trigger workflows may not contain Respond to Webhook nodes).
     mapf = wf.add('Map Form Payload', 'n8n-nodes-base.code', 'code', code(r'''
-// Items come from "OA-00 Form Intake" (Execute Workflow, accept all data).
+// Items come from "OA-00 · Form Intake" (Execute Workflow, accept all data).
 // Accepts one prospect per item, or { prospects: [...] }. _source is forced to "form" so a caller
 // can never target sheet rows (_row_number is not passed through).
 const out = [];
@@ -248,8 +253,8 @@ return $input.all().map(i => ({ json: {
 
 # ================= 00 FORM INTAKE =================
 def build_00(path):
-    wf = WF('OA-00 Form Intake', '00')
-    wf.note('Form intake (calls OA-01)', 'Manual add / demo form. n8n does not allow **Respond to Webhook** nodes in a workflow started by an **n8n Form Trigger**, and OA-01 needs them for its webhook API, so the form lives here.\n\n1. **Form: Add Prospect** collects the fields\n2. **Map Form Fields** shapes them like the webhook payload\n3. **Run OA-01 Intake** (Execute Workflow, by ID, waits) runs OA-01\'s normalise -> dedupe -> append -> Events path with source `form`\n4. **Form Ending** shows whether the prospect was added\n\nSetup: paste OA-01\'s workflow ID into **Run OA-01 Intake** (placeholder `REPLACE_WITH_OA01_INTAKE_WORKFLOW_ID`). Publish OA-01 before publishing this one.', (-80, -380), 760, 300, 4)
+    wf = WF('OA-00 · Form Intake', '00')
+    wf.note('Form intake (calls OA-01 · Outreach Intake)', 'Manual add / demo form. n8n does not allow **Respond to Webhook** nodes in a workflow started by an **n8n Form Trigger**, and OA-01 needs them for its webhook API, so the form lives here.\n\n1. **Form: Add Prospect** collects the fields\n2. **Map Form Fields** shapes them like the webhook payload\n3. **Run OA-01 Intake** (Execute Workflow, by ID, waits) runs OA-01\'s normalise -> dedupe -> append -> Events path with source `form`\n4. **Form Ending** shows whether the prospect was added\n\nSetup: paste OA-01\'s workflow ID into **Run OA-01 Intake** (placeholder `REPLACE_WITH_OA01_INTAKE_WORKFLOW_ID`). Publish **OA-01 · Outreach Intake** before publishing this one.', (-80, -380), 760, 320, 4)
     form = wf.add('Form: Add Prospect', 'n8n-nodes-base.formTrigger', 'form', {
         'formTitle': 'Add an outreach prospect',
         'formDescription': 'Adds one prospect to the AI Outreach CRM. The agent researches their site and drafts a note for your approval.',

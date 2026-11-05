@@ -1,12 +1,14 @@
 import json, uuid, hashlib
 
-V = dict(  # node typeVersions verified present in n8n 1.123.x AND 2.45.x
+V = dict(  # typeVersions used on self-hosted n8n 2.8.4
     form='2.2', formPage='2.3', execWf='1.2', execWfTrigger='1.1', webhook='2', respond='1.1', schedule='1.2', set='3.4', code='2', if_='2.2', switch='3.2',
     sheets='4.5', gmail='2.1', gmailTrigger='1.2', http='4.2', limit='1', loop='3', errorTrigger='1',
     sticky='1', noop='1', agent='2.2', chain='1.5', gemini='1', parser='1.2')
 def num(v): return float(v) if '.' in v else int(v)
 
-GEMINI_MODEL = 'models/gemini-2.5-flash'
+GEMINI_MODEL = 'models/gemini-3.5-flash-lite'
+LLM_TRIES = 4
+LLM_WAIT = 5000
 
 def uid(seed):
     return str(uuid.UUID(hashlib.md5(seed.encode()).hexdigest()))
@@ -22,11 +24,12 @@ class WF:
         n.update(extra)
         self.nodes.append(n)
         return name
-    def ext(self, name, retry=True, wait=3000):
-        """mark external-call node with retries"""
+    def ext(self, name, retry=True, wait=3000, tries=3):
+        """mark external-call node with retries. Sheets, Gmail and HTTP stay at 3 tries.
+        Gemini and the agent/chain nodes pass tries=4 and wait=5000."""
         for n in self.nodes:
             if n['name'] == name:
-                n['retryOnFail'] = True; n['maxTries'] = 3; n['waitBetweenTries'] = wait
+                n['retryOnFail'] = True; n['maxTries'] = tries; n['waitBetweenTries'] = wait
         return name
     def c(self, a, b, out=0, inp=0, kind='main'):
         self.conns.setdefault(a, {}).setdefault(kind, [])

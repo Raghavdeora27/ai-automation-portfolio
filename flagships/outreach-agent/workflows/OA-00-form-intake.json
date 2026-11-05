@@ -1,15 +1,15 @@
 {
-  "name": "OA-00 Form Intake",
+  "name": "OA-00 · Form Intake",
   "nodes": [
     {
       "parameters": {
-        "content": "## Form intake (calls OA-01)\nManual add / demo form. n8n does not allow **Respond to Webhook** nodes in a workflow started by an **n8n Form Trigger**, and OA-01 needs them for its webhook API, so the form lives here.\n\n1. **Form: Add Prospect** collects the fields\n2. **Map Form Fields** shapes them like the webhook payload\n3. **Run OA-01 Intake** (Execute Workflow, by ID, waits) runs OA-01's normalise -> dedupe -> append -> Events path with source `form`\n4. **Form Ending** shows whether the prospect was added\n\nSetup: paste OA-01's workflow ID into **Run OA-01 Intake** (placeholder `REPLACE_WITH_OA01_INTAKE_WORKFLOW_ID`). Publish OA-01 before publishing this one.",
-        "height": 300,
+        "content": "## Form intake (calls OA-01 · Outreach Intake)\nManual add / demo form. n8n does not allow **Respond to Webhook** nodes in a workflow started by an **n8n Form Trigger**, and OA-01 needs them for its webhook API, so the form lives here.\n\n1. **Form: Add Prospect** collects the fields\n2. **Map Form Fields** shapes them like the webhook payload\n3. **Run OA-01 Intake** (Execute Workflow, by ID, waits) runs OA-01's normalise -> dedupe -> append -> Events path with source `form`\n4. **Form Ending** shows whether the prospect was added\n\nSetup: paste OA-01's workflow ID into **Run OA-01 Intake** (placeholder `REPLACE_WITH_OA01_INTAKE_WORKFLOW_ID`). Publish **OA-01 · Outreach Intake** before publishing this one.",
+        "height": 320,
         "width": 760,
         "color": 4
       },
-      "id": "e84b1b03-e04d-acab-1203-5d43b921aae8",
-      "name": "Note: Form intake (calls OA-01)",
+      "id": "459c9508-4b82-becf-d6d9-d79b55ad5ea9",
+      "name": "Note: Form intake (calls OA-01 · Outreach Intake)",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
