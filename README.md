@@ -20,7 +20,7 @@ A slow API gets retried. A stored ID stops a second invoice, lead, or email from
 
 ## Prefix key
 
-Every workflow name in this repo and in my n8n, Make and Zapier accounts starts with one of these, so you can tell at a glance which system it belongs to. Flagship workflows use a prefix (`OA-01 …`); single automations keep their plain number (`02 · …`), so the two never clash.
+Every workflow name in this repo and in my n8n, Make and Zapier accounts starts with one of these, so you can tell at a glance which system it belongs to. Flagship workflows use a prefix (`OA-01 · …`); single automations keep their plain number (`02 · …`), so the two never clash.
 
 | Prefix | Stands for | What it is |
 | --- | --- | --- |
@@ -60,27 +60,37 @@ Each single-automation folder holds a spec (`README.md`) and a `sample-data/` di
 
 **Business outcome:** cold outreach that runs every day without becoming a full-time job. I built it so every prospect gets a first email based on research of their own website, and nothing goes out until I approve it. Follow-ups always happen. A reply stops the sequence. Unsubscribes and bounces are suppressed automatically. The same prospect can never be added twice, and every decision is logged.
 
-**How it works.** Eight n8n workflows share one Google Sheet, which acts as the CRM. The status column is the queue between them.
+**How it works.** OA is one system, not eight separate products. OA-00 through OA-06 and OA-99 share one Google Sheet, which acts as the CRM. The status column is the queue between them. Support Agent and CRM Pipeline are separate flagships.
 
 | Workflow | What it does |
 | --- | --- |
-| OA-00 Form Intake | A simple form to add one prospect by hand. It passes the prospect to OA-01. |
-| OA-01 Outreach Intake | Takes prospects from the form, a secured webhook, or rows pasted into the sheet. It cleans and validates them, removes duplicates by email and by domain, checks the suppression list, and logs every decision to an Events tab. |
-| OA-02 Research & Draft | Fetches each prospect's website. A Gemini agent judges fit and writes a short personal email, and a quality score gates weak drafts. |
-| OA-03 Approval & Send | Sends me each draft in Gmail to approve, edit or reject. Approved emails go out only inside the prospect's business hours, under a daily cap, and after a last suppression check. |
-| OA-04 Follow-ups | Sends up to two short follow-ups in the same Gmail thread, and stops the moment the prospect replies. |
-| OA-05 Inbox Agent | Reads replies and sorts them: interested, question, objection, not now, unsubscribe, out of office or bounce. It suggests a reply for me to approve, or handles the reply itself (suppress, snooze, reschedule). |
-| OA-06 Weekly Report | Emails me a Monday summary: sent, replies, reply rate and bounces, plus a short AI insight. |
-| OA-99 Error Handler | Any failure in OA-00 to OA-06 sends me an alert email and adds a row to the Errors tab. |
+| OA-00 · Form Intake | A simple form to add one prospect by hand. It passes the prospect to OA-01. |
+| OA-01 · Outreach Intake | Takes prospects from the form, a secured webhook, or rows pasted into the sheet. It cleans and validates them, removes duplicates by email and by domain, checks the suppression list, and logs every decision to an Events tab. |
+| OA-02 · Research & Draft | Fetches each prospect's website. A Gemini agent judges fit and writes a short personal email, and a quality score gates weak drafts. If the website or the AI step fails, the row is marked `research_failed` and written to Errors. |
+| OA-03 · Approval & Send | Sends me each draft in Gmail to approve, edit or reject. Approved emails go out only inside the prospect's business hours, under a daily cap, and after a last suppression check. |
+| OA-04 · Follow-ups | Sends up to two short follow-ups in the same Gmail thread, and stops the moment the prospect replies. |
+| OA-05 · Inbox Agent | Reads replies and sorts them: interested, question, objection, not now, unsubscribe, out of office or bounce. It suggests a reply for me to approve, or handles the reply itself (suppress, snooze, reschedule). |
+| OA-06 · Weekly Report | Emails me a Monday summary: sent, replies, reply rate and bounces, plus a short AI insight. |
+| OA-99 · Error Handler | Any failure in OA-00 to OA-06 sends me an alert email and adds a row to the Errors tab. |
 
 **Where this is used:** I ran outreach and candidate pipelines by hand as Outreach Manager at DataisGood and at Careernet. OA is how I'd run that work now: the research and drafts are automatic, I approve every email, and no follow-up is missed.
 
 **Skills shown:** n8n multi-workflow design, AI agents with tools and structured output (Gemini), web research, human-in-the-loop approval in Gmail, dedupe and suppression logic, timezone-aware send windows, rate caps, retries, a central error workflow, secret-checked webhooks that fail closed, an audit log, and an offline validator for the workflow JSON.
 
-**Status:** 🧪 Built, testing in progress.
-- Tested in OA-01: adding a prospect through the form, rejecting a duplicate form entry, writing to the Events audit log, and sheet import (a new row is added and a duplicate is rejected).
-- The webhook path is built, and I'll test it once its secret is set up.
-- OA-02 to OA-06 are not tested yet.
+**Status:** ✅ Built. Live-tested end to end on self-hosted n8n 2.8.4 (4–5 Nov 2026): OA-00 through OA-06, plus OA-99 error handling.
+
+| What | Status |
+| --- | --- |
+| OA-00 · Form Intake: add a prospect, and reject a duplicate | ✅ Tested |
+| OA-01 · Outreach Intake: sheet import (new row added, duplicate rejected) and the Events log | ✅ Tested |
+| OA-01 · Outreach Intake: webhook | ✅ Tested |
+| OA-02 · Research & Draft: research, draft, and the Errors row it writes when research fails | ✅ Tested |
+| OA-03 · Approval & Send: approve with edits, reject, and send | ✅ Tested |
+| OA-04 · Follow-ups: follow-up 1 in the same thread | ✅ Tested |
+| OA-04 · Follow-ups: follow-up 2, then no_response | ✅ Tested |
+| OA-05 · Inbox Agent: match a reply, classify it, approve the suggested reply, send it in the thread, status `in_conversation` | ✅ Tested |
+| OA-06 · Weekly Report | ✅ Tested |
+| OA-99 · Error Handler: alert email | ✅ Tested |
 
 → [flagships/outreach-agent/](flagships/outreach-agent/)
 

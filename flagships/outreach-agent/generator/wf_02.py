@@ -63,17 +63,22 @@ USER = (
     "Website text (cleaned, truncated to 6000 characters):\n{{ $json.site_text }}"
 )
 
+CHROME_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
 def build_02(path):
-    wf = WF('OA-02 Research & Draft', '02')
-    wf.note('Research & draft (every 30 min)', 'Takes up to **10** prospects with status `new`, one at a time:\n1. Re-reads the row and locks it as `researching` (idempotent: a row is only processed if it is still `new`)\n2. Fetches the website (15 s timeout, 3 retries, continue on fail) and strips it to text (6000 chars)\n3. **AI Agent (Gemini)** checks fit, checks prior messages to the same domain via a **Google Sheets tool**, writes the email; Structured Output Parser enforces the JSON\n4. Code re-scores the draft against the style rules; below MIN_QUALITY gets **one** regenerate\n5. Saves the draft to **Messages**, sets `drafted` / `disqualified` / `research_failed`, logs to **Events**', (-100, -480), 760, 330, 4)
+    wf = WF('OA-02 · Research & Draft', '02')
+    wf.note('Research & draft (every 30 min)', 'Takes up to **10** prospects with status `new` and a prospect_id, one at a time:\n1. Re-reads the row and locks it as `researching` (idempotent: a row is only processed if it is still `new`)\n2. Fetches the website with a Chrome user-agent (15 s timeout, 3 retries, continue on fail) and strips it to text (6000 chars)\n3. **AI Agent (Gemini)** checks fit, checks prior messages to the same domain via a **Google Sheets tool**, writes the email; Structured Output Parser enforces the JSON. The agent and Gemini nodes retry 4 times, 5 s apart\n4. Code re-scores the draft against the style rules; below MIN_QUALITY gets **one** regenerate\n5. Saves the draft to **Messages**, sets `drafted` / `disqualified` / `research_failed`, logs to **Events**. `research_failed` also appends a row to **Errors** (this caught path does not raise to OA-99)', (-100, -520), 780, 380, 4)
     wf.note('Style rules live in the Agent system prompt', 'Edit **AI Research & Draft Agent → Options → System Message** to change tone. `Score & Check Draft` enforces word count, paragraphs, no lists/labels/buzzwords, video offer and signature in code, so a weak draft is caught even if the model rates itself highly.', (1900, -480), 620, 230, 6)
     t = wf.add('Every 30 min', 'n8n-nodes-base.scheduleTrigger', 'schedule', {'rule': {'interval': [{'field': 'minutes', 'minutesInterval': 30}]}}, (0, 0))
     cfg = config(wf, (220, 0), [('BATCH_SIZE', 10, 'number'), ('MIN_QUALITY', 7, 'number'), ('MAX_SITE_CHARS', 6000, 'number')])
     rd = sheet(wf, 'Read New Prospects', sheets_read('Prospects', [('status', 'new')]), (440, 0))
+    has = ifN(wf, 'Has prospect_id?', '$json.prospect_id', (550, 180))
     lim = wf.add('Take Batch of 10', 'n8n-nodes-base.limit', 'limit', {'maxItems': 10}, (660, 0))
     lp = loop(wf, 'Loop Prospects', (880, 0))
     done = wf.add('Batch Done', 'n8n-nodes-base.noOp', 'noop', {}, (1100, -160))
-    wf.chain(t, cfg, rd, lim, lp); wf.c(lp, done, 0)
+    wf.chain(t, cfg, rd, has)
+    wf.c(has, lim, 0)  # rows with no prospect_id are dropped
+    wf.chain(lim, lp); wf.c(lp, done, 0)
     P = "$('Loop Prospects').first(1).json"
     rr = reread(wf, 'Re-read Prospect', P + '.prospect_id', (1100, 40))
     wf.c(lp, rr, 1)
@@ -89,7 +94,7 @@ return [{ json: { prospect_id: $json.prospect_id, status: 'researching', updated
         'url': "={{ $('Re-read Prospect').first().json.website }}",
         'sendHeaders': True,
         'headerParameters': {'parameters': [
-            {'name': 'User-Agent', 'value': 'Mozilla/5.0 (compatible; OutreachResearchBot/1.0)'},
+            {'name': 'User-Agent', 'value': CHROME_UA},
             {'name': 'Accept', 'value': 'text/html,application/xhtml+xml'}]},
         'options': {'timeout': 15000, 'redirect': {'redirect': {'maxRedirects': 5}},
                     'response': {'response': {'responseFormat': 'text', 'outputPropertyName': 'html'}}}},
@@ -125,8 +130,8 @@ return [{ json: {
     wf.c(ext, ok)
     agent = wf.add('AI Research & Draft Agent', '@n8n/n8n-nodes-langchain.agent', 'agent', {
         'promptType': 'define', 'text': USER, 'hasOutputParser': True,
-        'options': {'systemMessage': SYSTEM, 'maxIterations': 6}}, (2680, -100), onError='continueErrorOutput')
-    wf.ext(agent, wait=5000)
+        'options': {'systemMessage': SYSTEM, 'maxIterations': 6}},         (2680, -100), onError='continueErrorOutput')
+    wf.ext(agent, wait=LLM_WAIT, tries=LLM_TRIES)
     g1 = gemini(wf, 'Gemini (Draft)', (2560, 140), 0.6)
     p1 = parser(wf, 'Parse Draft JSON', DRAFT_SCHEMA, (2880, 140))
     tool = wf.add('prior_messages', 'n8n-nodes-base.googleSheetsTool', 'sheets', {
@@ -189,9 +194,38 @@ return [{ json: { ...$('Score & Check Draft').first().json, outcome: 'drafted', 
     wf.c(regen, pick, 0); wf.c(regen, keep, 1)
     fin = codeN(wf, 'Finalize Outcome', r'''
 const j = $input.first().json;
-return [{ json: { ...j, prospect_id: $('Loop Prospects').first(1).json.prospect_id } }];
+return [{ json: { ...j, prospect_id: $('Shape: Lock Row').first().json.prospect_id } }];
 ''', (3960, 0))
     wf.c(need, fin, 1); wf.c(pick, fin); wf.c(keep, fin); wf.c(fail, fin)
+    caught = codeN(wf, 'Shape: Caught Error Row', r'''
+const locked = $('Shape: Lock Row').first().json || {};
+const failed = $input.first().json || {};
+const site = $('Extract Site Text').isExecuted ? $('Extract Site Text').first().json : {};
+const where = site.site_ok ? 'AI Research & Draft Agent' : 'Fetch Website';
+const pid = String(locked.prospect_id || '');
+const reason = String(failed.fit_reason || 'research failed').slice(0, 1200);
+let executionId = '';
+let mode = '';
+let workflowName = 'OA-02 · Research & Draft';
+try {
+  if (typeof $workflow !== 'undefined' && $workflow && $workflow.name) workflowName = String($workflow.name);
+  if (typeof $execution !== 'undefined' && $execution) {
+    executionId = String($execution.id || '');
+    mode = String($execution.mode || '');
+  }
+} catch (e) {}
+return [{ json: {
+  timestamp: new Date().toISOString(),
+  workflow: workflowName,
+  node: where,
+  error_message: (pid ? pid + ': ' : '') + reason,
+  execution_id: executionId,
+  execution_url: '',
+  mode: mode,
+} }];
+''', (3180, 460))
+    errw = sheet(wf, 'Append to Errors', sheets_append('Errors'), (3420, 460), onError='continueRegularOutput')
+    wf.c(fail, caught); wf.c(caught, errw)
     rr2 = reread(wf, 'Re-read Before Save', "$('Finalize Outcome').first().json.prospect_id", (4180, 0))
     held = ifN(wf, 'Lock Still Held?', "$json.status === 'researching'", (4400, 0))
     wf.chain(fin, rr2, held)

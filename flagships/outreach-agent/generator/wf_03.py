@@ -23,7 +23,7 @@ function formValue(data, label) {
 '''
 
 def build_03(path):
-    wf = WF('OA-03 Approval & Send', '03')
+    wf = WF('OA-03 · Approval & Send', '03')
     wf.note('A. Human approval (every 5 min, one draft per run)', 'Gmail **Send and Wait** can only hold one approval per execution, so each run takes **one** `drafted` prospect:\n1. Re-read → still `drafted`? → load its draft from **Messages**\n2. Mark `pending_approval` (so the next run will not pick it again)\n3. Email APPROVER_EMAIL a form: **Approve as written / Approve with my edits / Reject** (+ edited subject/body)\n4. Re-read → still `pending_approval`? → set `approved` / `rejected` / `approval_expired` (no answer in 48 h)\n\nApproving does **not** send - sending happens in lane B, inside the send window.', (-100, -560), 760, 360, 4)
     wf.note('B. Sending (every 15 min)', 'Takes `approved` prospects and sends **only** when:\n- local time in the **prospect\'s timezone** is Mon-Fri 09:00-17:00 (otherwise it stays `approved` and is retried next run)\n- today\'s sends (Events `sent` + `followup_sent` + `reply_sent`) are under **DAILY_CAP**\n- the email/domain is **not** on Suppression (re-checked right before sending)\n\nThen Gmail send → store thread_id + last_message_id → `sent`, next_followup_at = +3 business days.', (-100, 560), 760, 300, 5)
     t1 = wf.add('Every 5 min: Request Approval', 'n8n-nodes-base.scheduleTrigger', 'schedule', {'rule': {'interval': [{'field': 'minutes', 'minutesInterval': 5}]}}, (0, -40))

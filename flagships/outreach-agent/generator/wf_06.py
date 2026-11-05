@@ -1,7 +1,7 @@
 from common import *
 
 def build_06(path):
-    wf = WF('OA-06 Weekly Report', '06')
+    wf = WF('OA-06 · Weekly Report', '06')
     wf.note('Weekly report (Mondays 09:00)', 'Counts the last 7 days from **Events** (imported, drafted, approved, sent, follow-ups, replies by category, bounces, unsubscribes) plus the current pipeline from **Prospects**, asks Gemini for a 3-line insight, and emails an HTML report to REPORT_EMAIL.\n\nThe 09:00 uses the workflow timezone (**Settings → Timezone**, set to Asia/Kolkata in this file).', (-100, -380), 640, 260, 4)
     t = wf.add('Every Monday 09:00', 'n8n-nodes-base.scheduleTrigger', 'schedule', {'rule': {'interval': [
         {'field': 'weeks', 'weeksInterval': 1, 'triggerAtDay': [1], 'triggerAtHour': 9, 'triggerAtMinute': 0}]}}, (0, 0))

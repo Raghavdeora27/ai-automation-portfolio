@@ -4,8 +4,8 @@ FOLLOW_SCHEMA = {'type': 'object', 'properties': {
     'body': {'type': 'string', 'description': '2-3 short lines of plain text plus sign-off'}}, 'required': ['body']}
 
 def build_04(path):
-    wf = WF('OA-04 Follow-ups', '04')
-    wf.note('Follow-ups (hourly)', 'Finds prospects in `sent` / `followup_1` / `followup_2` whose **next_followup_at** is due, then per prospect:\n1. Re-read status (skip if it changed)\n2. Get the **Gmail thread** - any message not from SENDER_EMAIL → `replied` (OA-05-inbox-agent handles the reply); a mailer-daemon message → `bounced` + Suppression\n3. Already sent 2 follow-ups → `no_response`\n4. Otherwise Gemini writes a 2-3 line nudge, replied **in the same thread**:\n   sent → `followup_1` (+4 business days) → `followup_2` → `no_response`\n\nSending respects the send window, DAILY_CAP and Suppression exactly like 03. Reply/bounce detection runs any time.', (-100, -560), 780, 380, 4)
+    wf = WF('OA-04 · Follow-ups', '04')
+    wf.note('Follow-ups (hourly)', 'Finds prospects in `sent` / `followup_1` / `followup_2` whose **next_followup_at** is due, then per prospect:\n1. Re-read status (skip if it changed)\n2. Get the **Gmail thread** - any message not from SENDER_EMAIL → `replied` (**OA-05 · Inbox Agent** handles the reply); a mailer-daemon message → `bounced` + Suppression\n3. Already sent 2 follow-ups → `no_response`\n4. Otherwise Gemini writes a 2-3 line nudge, replied **in the same thread**:\n   sent → `followup_1` (+4 business days) → `followup_2` → `no_response`\n\nSending respects the send window, DAILY_CAP and Suppression exactly like 03. Reply/bounce detection runs any time. Gemini retries 4 times, 5 s apart.', (-100, -560), 780, 400, 4)
     t = wf.add('Every Hour', 'n8n-nodes-base.scheduleTrigger', 'schedule', {'rule': {'interval': [{'field': 'hours', 'hoursInterval': 1}]}}, (0, 0))
     cfg = config(wf, (220, 0))
     rd = sheet(wf, 'Read All Prospects', sheets_read('Prospects'), (440, 0))
@@ -53,7 +53,7 @@ const lastOurs = [...msgs].reverse().find(m => isSent(m) || fromOf(m).includes(m
 const base = { prospect_id: p.prospect_id, updated_at: nowIso() };
 let action, out;
 if (bounce) { action = 'bounce'; out = { ...base, status: 'bounced', next_followup_at: '', email: p.email, domain: p.domain, reason: 'bounce', added_at: nowIso(), _event: 'bounced', _detail: String(bounce.snippet || '').slice(0, 300) }; }
-else if (reply) { action = 'update'; out = { ...base, status: 'replied', next_followup_at: '', _event: 'reply_detected', _detail: `reply in thread from ${reply.From || 'prospect'} - handled by OA-05-inbox-agent` }; }
+else if (reply) { action = 'update'; out = { ...base, status: 'replied', next_followup_at: '', _event: 'reply_detected', _detail: `reply in thread from ${reply.From || 'prospect'} - handled by OA-05 · Inbox Agent` }; }
 else if (p._suppressed) { action = 'update'; out = { ...base, status: 'suppressed', next_followup_at: '', _event: 'followup_blocked_suppressed', _detail: 'on Suppression list' }; }
 else if (p.status === 'followup_2') { action = 'update'; out = { ...base, status: 'no_response', next_followup_at: '', _event: 'no_response', _detail: 'no reply after 2 follow-ups' }; }
 else if (!p._can_send) { action = 'skip'; out = { ...base, _detail: p._why_not }; }
@@ -110,7 +110,7 @@ const f = $('Prepare Follow-up').first().json;
 const r = $input.first().json;
 const now = new Date().toISOString();
 return [{ json: { message_key: `${f.prospect_id}-followup${f.n}-${Date.now()}`, prospect_id: f.prospect_id, email: f.email, domain: f.domain,
-  kind: `followup_${f.n}`, subject: 'Re: ' + f.first_subject, body: f.body, quality_score: '', status: 'sent',
+  kind: `followup_${f.n}`, subject: /^re:/i.test(f.first_subject) ? f.first_subject : 'Re: ' + f.first_subject, body: f.body, quality_score: '', status: 'sent',
   thread_id: r.threadId || f.thread_id, gmail_message_id: r.id || '', created_at: now, sent_at: now } }];
 ''', (3840, -320))
     smw = sheet(wf, 'Save Follow-up to Messages', sheets_append('Messages'), (4060, -320))

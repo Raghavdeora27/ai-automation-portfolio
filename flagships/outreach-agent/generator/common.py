@@ -16,7 +16,7 @@ function parseLLM(j) {
 def gemini(wf, name, pos, temp=0.5):
     n = wf.add(name, '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 'gemini',
                {'modelName': GEMINI_MODEL, 'options': {'temperature': temp}}, pos)
-    wf.ext(n, wait=4000)
+    wf.ext(n, wait=LLM_WAIT, tries=LLM_TRIES)
     return n
 
 def parser(wf, name, schema, pos):
@@ -28,7 +28,7 @@ def chain_llm(wf, name, text, pos, model_name, parser_name=None, schema=None, te
     extra = {}
     if on_error: extra['onError'] = on_error
     n = wf.add(name, '@n8n/n8n-nodes-langchain.chainLlm', 'chain', p, pos, **extra)
-    wf.ext(n, wait=5000)
+    wf.ext(n, wait=LLM_WAIT, tries=LLM_TRIES)
     g = gemini(wf, model_name, (pos[0] - 40, pos[1] + 200), temp)
     wf.c(g, n, kind='ai_languageModel')
     if schema:

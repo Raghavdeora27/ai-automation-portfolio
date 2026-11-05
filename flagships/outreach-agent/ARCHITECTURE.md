@@ -1,14 +1,14 @@
 # OA (Outreach Agent): architecture
 
-Eight n8n workflows share one Google Sheet. The **status column on Prospects is the only hand-off** between workflows (the one exception: OA-00 Form Intake calls OA-01 directly), so each workflow is small, independently schedulable, and safe to re-run.
+Eight n8n workflows share one Google Sheet. The **status column on Prospects is the only hand-off** between workflows (the one exception: OA-00 · Form Intake calls OA-01 · Outreach Intake directly), so each workflow is small, independently schedulable, and safe to re-run.
 
 ```mermaid
 flowchart LR
-  subgraph FI[OA-00 Form Intake]
+  subgraph FI[OA-00 · Form Intake]
     F[n8n Form Trigger] --> FM[Map form fields] --> EX[Execute Workflow<br/>OA-01 by ID · wait]
     EX --> FE[Form Ending<br/>added / not added]
   end
-  subgraph IN[OA-01 Outreach Intake]
+  subgraph IN[OA-01 · Outreach Intake]
     ST[When Executed by<br/>Another Workflow] -->|source form| N
     W[Webhook POST<br/>x-webhook-secret] -->|valid| N
     W -->|invalid| X401[401]
@@ -18,17 +18,20 @@ flowchart LR
   D -->|ok: status new| P[(Google Sheets CRM<br/>Prospects · Messages · Events · Suppression · Errors)]
   D -->|dup / suppressed / invalid| P
 
-  subgraph RD[OA-02 Research & Draft · 30m · batch 10]
+  subgraph RD[OA-02 · Research & Draft · 30m · batch 10]
     L1[Lock: researching] --> H[HTTP fetch site<br/>timeout · 3 retries] --> T[Strip to text 6000]
-    T --> AG[Gemini Agent<br/>+ Structured parser<br/>+ Sheets tool: prior msgs]
+    T --> AG[Gemini Agent<br/>4 retries · 5 s<br/>+ Structured parser<br/>+ Sheets tool: prior msgs]
     AG --> Q{Score >= 7?}
     Q -->|no, once| RG[Gemini regenerate] --> BEST[Pick best]
     Q -->|yes| BEST
+    T -->|fetch failed| RF[research_failed<br/>+ Errors row]
+    AG -->|agent error| RF
   end
   P -->|new| L1
   BEST -->|drafted / disqualified + Messages draft| P
+  RF --> P
 
-  subgraph AS[OA-03 Approval & Send]
+  subgraph AS[OA-03 · Approval & Send]
     A1[5m: one drafted] --> AP[Gmail sendAndWait<br/>approve / edit / reject]
     S2[15m: approved] --> WIN{Window 09-17 Mon-Fri<br/>prospect TZ · cap · suppression}
     WIN --> RR[Re-read status] --> SEND[Gmail send]
@@ -38,7 +41,7 @@ flowchart LR
   P -->|approved| S2
   SEND -->|sent + thread_id<br/>next_followup +3 bd| P
 
-  subgraph FU[OA-04 Follow-ups · hourly]
+  subgraph FU[OA-04 · Follow-ups · hourly]
     DUE[Due rows] --> TH[Get Gmail thread] --> DEC{Reply? bounce?}
     DEC -->|none| AIF[Gemini 2-3 line follow-up] --> REP[Reply in thread]
   end
@@ -46,7 +49,7 @@ flowchart LR
   DEC -->|replied / bounced| P
   REP -->|followup_1 +4bd → followup_2 → no_response| P
 
-  subgraph IB[OA-05 Inbox Agent · Gmail trigger]
+  subgraph IB[OA-05 · Inbox Agent · Gmail trigger]
     G[Unread INBOX] --> M[Match prospect<br/>thread / sender / bounce body] --> C[Gemini classifier]
     C --> SW{Switch}
     SW -->|interested/question/objection| AR[Approve reply] --> RS[Reply in thread]
@@ -58,9 +61,9 @@ flowchart LR
   RS -->|in_conversation| P
   SN & UN & OO & BO --> P
 
-  R[OA-06 Weekly report · Mon 09:00<br/>metrics + Gemini insight → email] --- P
+  R[OA-06 · Weekly Report · Mon 09:00<br/>metrics + Gemini insight → email] --- P
   EX -.calls.-> ST
-  E[OA-99 Error handler<br/>Gmail alert + Errors row] -.errorWorkflow of OA-00 to OA-06.- FI & IN & RD & AS & FU & IB
+  E[OA-99 · Error Handler<br/>Gmail alert + Errors row] -.errorWorkflow of OA-00 to OA-06.- FI & IN & RD & AS & FU & IB
 ```
 
 ## Status lifecycle
@@ -89,8 +92,9 @@ send errors ─▶ send_failed / followup_failed / reply_failed / needs_review (
 | **Suppression checked 3 times** | At intake, while planning the send, and again right before Gmail send. Unsubscribes never get a reply. |
 | **Structured output and a code quality gate** | The parser enforces the JSON. A Code node re-scores against the style rules: 80–120 words, 3 paragraphs, no lists or labels, no buzzwords, mentions the video, signed. A low score gets exactly one regenerate, and the better draft is kept. |
 | **Prompt-injection hygiene** | Website and email text is stripped of `{ }` (LangChain template braces) and clipped before it reaches Gemini. Classifier output is an enum, and an unsubscribe regex acts as a safety net. |
-| **Every external node retries** | `retryOnFail`, 3 tries, a 2–5 s wait. HTTP fetch continues on failure. Gmail send errors go to an error output, which sets `*_failed` instead of crashing. |
-| **Central error workflow** | OA-00 to OA-06 point to OA-99. You get a Gmail alert plus an Errors row with the node, message and execution link. |
+| **Retries** | Sheets, Gmail and the website fetch use `retryOnFail`, 3 tries, a 2–5 s wait. Gemini model nodes and the AI agent or chain nodes retry 4 times, 5 s apart. The website fetch continues on failure. Gmail send errors go to an error output, which sets `*_failed` instead of crashing. |
+| **Research failures log themselves** | If the site fetch or the draft agent fails, OA-02 sets `research_failed` and appends an Errors row. That path is caught inside the workflow, so it does not call OA-99. |
+| **Central error workflow** | OA-00 to OA-06 point to OA-99 · Error Handler. A crash sends a Gmail alert and adds an Errors row with the node, message and execution link. |
 | **No secrets in JSON** | The webhook secret comes from `$env.OUTREACH_WEBHOOK_SECRET` and fails closed. Credentials are attached after import. |
 
 ## Known limitations
@@ -99,6 +103,6 @@ send errors ─▶ send_failed / followup_failed / reply_failed / needs_review (
 - **Stuck locks.** If n8n crashes mid-run, a prospect can stay `researching` or `pending_approval`. Reset it manually.
 - **Snoozed prospects** get `recontact_at` but aren't re-queued automatically. Filter on recontact_at in the sheet, or extend 04.
 - **Matching** is by Gmail thread, then sender email. Replies from a different address are ignored and left unread.
-- **Retry flags on AI sub-nodes** (model, parser, tool) are set but mostly cosmetic. Retries happen on the parent Agent and Chain nodes.
+- **Retries.** Sheets, Gmail and the website fetch retry 3 times, 2–5 s apart. Gemini model nodes and the agent or chain nodes retry 4 times, 5 s apart. A retry flag on the parser or the Sheets tool does not retry the model call. The agent and chain nodes carry that retry.
 - **The Google Sheets tool** in OA-02 is n8n's generated `googleSheetsTool` node. It works in 1.x and 2.x; if your build lacks it, delete the tool (the agent still works).
 - The send window uses the prospect's IANA timezone. A blank or invalid timezone falls back to DEFAULT_TIMEZONE.

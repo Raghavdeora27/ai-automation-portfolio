@@ -4,7 +4,8 @@ Usage: python3 validate_workflows.py [workflows_dir] [n8n_install_dir ...]
 Checks: JSON parses; unique node names/ids; connection targets exist; node types + typeVersions exist in the
 installed n8n node catalogue; parameter names exist in the node description (recursively for collections);
 AI sub-nodes are wired with ai_languageModel / ai_outputParser / ai_tool; every $('Node') reference exists;
-external nodes retry (3 tries, 2-5 s); Config node present (when used); Form Trigger never reaches Respond to Webhook; Execute Workflow has a workflowId; errorWorkflow placeholder set; Code nodes compile
+Sheets, Gmail and HTTP retry (3 tries, 2-5 s); Gemini, agent and chain nodes retry (4 tries, 5 s) and use
+models/gemini-3.5-flash-lite; Code nodes do not call new URL(); Config node present (when used); Form Trigger never reaches Respond to Webhook; Execute Workflow has a workflowId; errorWorkflow placeholder set; Code nodes compile
 (node --check); no secret-looking strings."""
 import json, os, re, subprocess, sys, tempfile, glob
 
@@ -13,6 +14,9 @@ INSTALLS = sys.argv[2:] or ['/home/box/n8n1', '/home/box/n8n2']
 EXTERNAL = {'n8n-nodes-base.googleSheets', 'n8n-nodes-base.gmail', 'n8n-nodes-base.httpRequest', 'n8n-nodes-base.gmailTrigger',
             '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', '@n8n/n8n-nodes-langchain.agent', '@n8n/n8n-nodes-langchain.chainLlm',
             'n8n-nodes-base.googleSheetsTool'}
+LLM_TYPES = {'@n8n/n8n-nodes-langchain.lmChatGoogleGemini', '@n8n/n8n-nodes-langchain.agent',
+             '@n8n/n8n-nodes-langchain.chainLlm'}
+GEMINI_MODEL = 'models/gemini-3.5-flash-lite'
 AI_KIND = {'@n8n/n8n-nodes-langchain.lmChatGoogleGemini': 'ai_languageModel',
            '@n8n/n8n-nodes-langchain.outputParserStructured': 'ai_outputParser',
            'n8n-nodes-base.googleSheetsTool': 'ai_tool'}
@@ -136,11 +140,19 @@ def validate(path, cats):
                 extra_ok = {'descriptionType', 'toolDescription'} if t.endswith('Tool') else set()
                 check_value({k: x for k, x in n['parameters'].items() if k not in extra_ok}, props_for(cat, t, v), '', pe)
                 errs += [f'[{inst}] {n["name"]}: {e}' for e in pe]
-        if t in EXTERNAL:
+        if t in LLM_TYPES:
+            if not (n.get('retryOnFail') is True and n.get('maxTries') == 4 and n.get('waitBetweenTries') == 5000):
+                errs.append(f'{n["name"]}: Gemini, agent or chain node must retry 4 times, 5s apart')
+            if t == '@n8n/n8n-nodes-langchain.lmChatGoogleGemini' and n.get('parameters', {}).get('modelName') != GEMINI_MODEL:
+                errs.append(f'{n["name"]}: model must be {GEMINI_MODEL}')
+        elif t in EXTERNAL:
             if not (n.get('retryOnFail') and n.get('maxTries') == 3 and 2000 <= n.get('waitBetweenTries', 0) <= 5000):
                 errs.append(f'{n["name"]}: external node without retry 3x / 2-5s')
         if t == 'n8n-nodes-base.code':
-            ok, msg = code_ok(n['parameters']['jsCode'], n['name'])
+            js = n['parameters'].get('jsCode', '')
+            if re.search(r'new\s+URL\s*\(', js):
+                errs.append(f'{n["name"]}: Code node uses new URL(), which the n8n task runner rejects')
+            ok, msg = code_ok(js, n['name'])
             if not ok: errs.append(f'Code syntax error in {n["name"]}: {msg}')
         if t in ('n8n-nodes-base.gmail',) and n['parameters'].get('operation') == 'sendAndWait' and not n.get('webhookId'):
             errs.append(f'{n["name"]}: sendAndWait needs webhookId')
