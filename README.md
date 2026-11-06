@@ -4,7 +4,13 @@ Hi, I'm Raghav Deora. I build AI agents and automations on n8n, Make and Zapier 
 
 ### Built and run in my own product
 
-I founded [JobRays](https://jobrays.io), an AI career companion. It launched around June 2026 as a global product. I built it myself with Next.js, FastAPI and Supabase, hosted on Vercel: the engines, the backend and frontend, and Ray, its AI career companion chatbot. The business runs on the same kind of automations I build for clients: Razorpay payments, Zoho Books invoicing and bookkeeping (including international transactions), and email automations with Resend and Loops.
+I founded [JobRays](https://jobrays.io), an AI career companion. It launched around June 2026 as a global product.
+
+- I built the full-stack product myself: Next.js, FastAPI and Supabase, hosted on Vercel.
+- Skills, Ladder, Roadmap and Overview are the other engines. Skills gives the exact courses, curriculum and projects for each goal milestone. Ladder sets the target job-role milestones, how to prepare, and which company types to target.
+- Roadmap is the whole career journey. Overview is the daily tracker that logs progress and feeds the other engines and Ray.
+- Ray, the AI career companion chatbot, routes tasks across OpenAI, Gemini and Claude for quality and cost.
+- The business runs on the same kind of automations I build for clients: Razorpay payments, Zoho Books invoicing and bookkeeping (including international transactions), and email automations with Resend and Loops.
 
 ### Process first, then automation
 
