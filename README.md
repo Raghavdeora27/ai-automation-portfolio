@@ -60,6 +60,8 @@ Each single-automation folder holds a spec (`README.md`) and a `sample-data/` di
 
 **Business outcome:** cold outreach that runs every day without becoming a full-time job. I built it so every prospect gets a first email based on research of their own website, and nothing goes out until I approve it. Follow-ups always happen. A reply stops the sequence. Unsubscribes and bounces are suppressed automatically. The same prospect can never be added twice, and every decision is logged.
 
+**Demo video:** [Watch the Outreach Agent demo (4:46)](https://drive.google.com/file/d/1j9FJGRAapDUVRgdgvi6ZVYk6_4CIPXwd/view?usp=sharing)
+
 **How it works.** OA is one system, not eight separate products. OA-00 through OA-06 and OA-99 share one Google Sheet, which acts as the CRM. The status column is the queue between them. Support Agent and CRM Pipeline are separate flagships.
 
 | Workflow | What it does |

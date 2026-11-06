@@ -4,6 +4,8 @@
 
 **Status:** ✅ Built. Live-tested end to end on self-hosted n8n 2.8.4 (4–5 Nov 2026): OA-00 through OA-06, plus OA-99 error handling. Details [below](#test-status).
 
+**Demo video:** [Watch the Outreach Agent demo (4:46)](https://drive.google.com/file/d/1j9FJGRAapDUVRgdgvi6ZVYk6_4CIPXwd/view?usp=sharing)
+
 ## What you get (the instant value)
 
 - **No prospect goes unresearched.** Every first email starts from something real on the prospect's own website, not a mail-merge template.
